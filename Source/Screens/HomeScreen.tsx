@@ -4,20 +4,20 @@ import { View, Text, StyleSheet, Button } from 'react-native';
 const HomeScreen = ({ navigation }: any) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Travel Planner</Text>
+      <Text style={styles.title}>Welcome to Pathfinder</Text>
       <Text style={styles.subtitle}>Choose a filter to get started:</Text>
 
       <Button
         title="Search by Country (Monaco)"
-        onPress={() => navigation.navigate('Itinerary', { destination: 'Monaco' })}
+        onPress={() => navigation.navigate('ItineraryScreen', { destination: 'Monaco' })}
       />
       <Button
         title="Search by City (Monte Carlo)"
-        onPress={() => navigation.navigate('Itinerary', { destination: 'Monte Carlo' })}
+        onPress={() => navigation.navigate('ItineraryScreen', { destination: 'Monte Carlo' })}
       />
       <Button
         title="Search Attractions (Beaches in Monaco)"
-        onPress={() => navigation.navigate('Itinerary', { destination: 'Beaches in Monaco' })}
+        onPress={() => navigation.navigate('ItineraryScreen', { destination: 'Beaches in Monaco' })}
       />
     </View>
   );

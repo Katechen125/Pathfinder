@@ -1,16 +1,20 @@
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, Button, Alert, TouchableOpacity } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { fetchPlaces, getPhotoUrl } from '../Services/API';
+import { RouteProp, useNavigation } from '@react-navigation/native';
+import { RootStackParamList, Place } from '../Services/types';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 interface Props {
-  route: any;
-}
+    route: RouteProp<RootStackParamList, 'ItineraryScreen'>;
+  }
 
 const ItineraryScreen: React.FC<Props> = ({ route }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { destination } = route.params;
   const [places, setPlaces] = useState<any[]>([]);
+  const [savedPlans, setSavedPlans] = useState<any[]>([]); // To store saved places
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,6 +32,11 @@ const ItineraryScreen: React.FC<Props> = ({ route }) => {
     getPlacesData();
   }, [destination]);
 
+  const saveToPlan = (place: Place) => {
+    setSavedPlans((prevPlans) => [...prevPlans, place]);
+    Alert.alert(`${place.name} has been added to your itinerary!`);
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -35,12 +44,26 @@ const ItineraryScreen: React.FC<Props> = ({ route }) => {
       </View>
     );
   }
+ return (
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Places in {destination}</Text>
+  <View style={styles.container}>
+  <View style={styles.headerButtons}>
+    <TouchableOpacity
+      style={[styles.actionButton, styles.mapButton]}
+      onPress={() => navigation.navigate('MapScreen', { places })}
+    >
+      <Text style={styles.buttonText}>View Full Map</Text>
+    </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+    <TouchableOpacity
+      style={[styles.actionButton, styles.savedPlansButton]}
+      onPress={() => navigation.navigate('SavedPlansScreen', { savedPlans })}
+    >
+      <Text style={styles.buttonText}>Saved Plans</Text>
+    </TouchableOpacity>
+  </View>
+
+  <ScrollView contentContainerStyle={styles.scrollContainer}>
         {places.map((place) => (
           <View key={place.id} style={styles.placeContainer}>
             <Text style={styles.placeName}>{place.name}</Text>
@@ -51,31 +74,40 @@ const ItineraryScreen: React.FC<Props> = ({ route }) => {
               />
             )}
             <Text style={styles.placeAddress}>{place.address}</Text>
+
             <View style={styles.buttonRow}>
               <TouchableOpacity 
                 style={[styles.actionButton, styles.itineraryButton]}
-                onPress={() => Alert.alert(`Added ${place.name} to itinerary`)}
+                onPress={() => saveToPlan(place)}
               >
-                <Text style={styles.buttonText}>Save to Plan</Text>
+                <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[styles.actionButton, styles.hotelButton]}
-                onPress={() => Alert.alert(`Searching hotels near ${place.name}`)}
+                onPress={() => navigation.navigate('HotelsScreen', { 
+                  location: place.location 
+                })}
               >
                 <Text style={styles.buttonText}>Hotels</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[styles.actionButton, styles.activityButton]}
-                onPress={() => Alert.alert(`Showing activities for ${place.name}`)}
+                onPress={() => navigation.navigate('ActivitiesScreen', { 
+                  location: place.location 
+                })}
               >
                 <Text style={styles.buttonText}>Activities</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 style={[styles.actionButton, styles.flightButton]}
-                onPress={() => Alert.alert(`Finding flights to ${place.name}`)}
+                onPress={() => navigation.navigate('FlightScreen', { 
+                  origin: 'Orlando', 
+                  destination: place.name,
+                  date: new Date().toISOString().split('T')[0]
+                })}
               >
                 <Text style={styles.buttonText}>Flights</Text>
               </TouchableOpacity>
@@ -83,29 +115,8 @@ const ItineraryScreen: React.FC<Props> = ({ route }) => {
           </View>
         ))}
       </ScrollView>
-
-      <MapView
-        style={styles.map}
-        initialRegion={{
-          latitude: places[0]?.location.lat || 0,
-          longitude: places[0]?.location.lng || 0,
-          latitudeDelta: 5,
-          longitudeDelta: 5,
-        }}
-      >
-        {places.map((place) => (
-          <Marker
-            key={place.id}
-            coordinate={{
-              latitude: place.location.lat,
-              longitude: place.location.lng,
-            }}
-            title={place.name}
-          />
-        ))}
-      </MapView>
     </View>
-  );
+   );
 };
 
 const styles = StyleSheet.create({
@@ -120,21 +131,6 @@ const styles = StyleSheet.create({
   scrollContainer: { 
     paddingHorizontal: 20 
   },
-  placeName: { 
-    fontSize: 18, 
-    fontWeight: 'bold' 
-  },
-  placeImage: { 
-    width: '100%', 
-    height: 200 
-  },
-  placeAddress: { 
-    fontSize: 16 
-  },
-  map: { 
-    flexGrow: 1, 
-    height: '40%' 
-  },
   placeContainer: { 
     marginBottom: 20,
     padding: 15,
@@ -146,6 +142,22 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  placeName: { 
+    fontSize: 18, 
+    fontWeight: 'bold', 
+    marginBottom: 5 
+  },
+  placeImage: { 
+    width: '100%', 
+    height: 200, 
+    borderRadius: 10 
+  },
+  placeAddress: { 
+    fontSize: 16, 
+    color: '#555', 
+    marginTop: 5 
+  },
+  
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -153,30 +165,50 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 8,
   },
-  actionButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  itineraryButton: {
-    backgroundColor: '#4CAF50', // Green
-  },
-  hotelButton: {
-    backgroundColor: '#2196F3', // Blue
-  },
-  activityButton: {
-    backgroundColor: '#FF9800', // Orange
-  },
-  flightButton: {
-    backgroundColor: '#9C27B0', // Purple
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
-  }
+  
+  actionButton:{
+   paddingVertical :8 ,
+   paddingHorizontal :12 ,
+   borderRadius :8 ,
+   minWidth :65 ,
+   alignItems :'center'
+},
+  
+
+itineraryButton:{ 
+  backgroundColor:'#4CAF50'
+},
+hotelButton:{ 
+  backgroundColor:'#2196F3'
+},
+activityButton:{ 
+  backgroundColor:'#FF9800'
+},
+flightButton:{ 
+  backgroundColor:'#9C27B0'
+},
+
+buttonText:{
+color:'white',
+fontWeight:'bold'
+},
+  
+map:{
+  flexGrow :1 ,
+  height :'40%' 
+},
+
+headerButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginBottom: 15,
+},
+mapButton: {
+  backgroundColor: '#795548',
+},
+savedPlansButton: {
+  backgroundColor: '#9E9E9E',
+},
 });
 
 export default ItineraryScreen;
