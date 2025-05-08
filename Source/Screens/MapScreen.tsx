@@ -1,28 +1,25 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import { RouteProp } from '@react-navigation/native';
+import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, Place } from '../Services/types';
 
-interface Props {
-    route: RouteProp<RootStackParamList, 'MapScreen'>;
-  }
-  
-const MapScreen: React.FC<Props> = ({ route }) => {
-  const { places } = route.params;
+interface MapScreenProps {
+  route: RouteProp<RootStackParamList, 'Map'>;
+}
+
+const MapScreen: React.FC<MapScreenProps> = ({ route }) => {
+  const navigation = useNavigation();
+  const { places, region } = route.params;
 
   return (
     <View style={styles.container}>
       <MapView
         style={styles.map}
-        initialRegion={{
-          latitude: places[0]?.location.lat || 0,
-          longitude: places[0]?.location.lng || 0,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        }}
+        region={region}
+        initialRegion={region} // Fallback if region is undefined
       >
-        {places.map((place: Place) => (
+        {places.map((place) => (
           <Marker
             key={place.id}
             coordinate={{
@@ -31,6 +28,7 @@ const MapScreen: React.FC<Props> = ({ route }) => {
             }}
             title={place.name}
             description={place.address}
+            pinColor={place.saved ? '#FF0000' : '#0000FF'}
           />
         ))}
       </MapView>
@@ -44,3 +42,5 @@ const styles = StyleSheet.create({
 });
 
 export default MapScreen;
+
+

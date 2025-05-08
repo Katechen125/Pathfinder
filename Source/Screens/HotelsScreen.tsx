@@ -4,26 +4,25 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../Services/types';
 import { searchHotels, searchLocations} from '../Services/API';
 
-const HotelsScreen: React.FC<{ route: RouteProp<RootStackParamList, 'HotelsScreen'> }> = ({ route }) => {
-    const [hotels, setHotels] = useState<any[]>([]);
+const HotelsScreen: React.FC<{ route: RouteProp<RootStackParamList, 'Hotels'> }> = ({ route }) => {
+  const { location } = route.params;
+  const [hotels, setHotels] = useState<any[]>([]);
   
-    useEffect(() => {
-      const fetchHotels = async () => {
-        const locations = await searchLocations('Monaco');
-        const monacoId = locations.find( l => l.type === 'CITY')?.id;
-        if(monacoId) {
-          const data = await searchHotels(monacoId);
-          setHotels(data);
-        }
-      };
-      fetchHotels();
-    }, []);
+  useEffect(() => {
+    const fetchHotels = async () => {
+      if (!location) return;
+      const data = await searchHotels(location.lat, location.lng);
+      setHotels(data);
+    };
+    fetchHotels();
+  }, [location]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Available Hotels</Text>
       <FlatList
         data={hotels}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.name}>{item.name}</Text>
@@ -43,7 +42,6 @@ const HotelsScreen: React.FC<{ route: RouteProp<RootStackParamList, 'HotelsScree
     </View>
   );
 };
-
 const styles = StyleSheet.create({
     container: { 
       flex: 1, 
