@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, MapRegion, Place } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getPhotoUrl } from '../Services/API'; 
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 interface Props {
   route: RouteProp<RootStackParamList, 'Itinerary'>;
@@ -12,12 +13,17 @@ interface Props {
 const ItineraryScreen: React.FC<Props> = ({ route }) => { 
   const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Itinerary'>>(); 
   const { savedPlans } = route.params;
+  const [plans, setPlans] = useState(savedPlans);
 
   const defaultRegion: MapRegion = {
     latitude: savedPlans[0]?.location.lat || 48.8566,
     longitude: savedPlans[0]?.location.lng || 2.3522,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
+  };
+
+  const deletePlan = (id: string) => {
+    setPlans(plans.filter(plan => plan.id !== id));
   };
 
   return (
@@ -36,6 +42,13 @@ const ItineraryScreen: React.FC<Props> = ({ route }) => {
             )}
             <Text style={styles.placeName}>{item.name}</Text>
             <Text style={styles.placeAddress}>{item.address}</Text>
+            <TouchableOpacity 
+              style={styles.deleteButton}
+              onPress={() => deletePlan(item.id)}
+            >
+              <Icon name="trash" size={18} color="white" />
+              <Text style={styles.buttonText}>Delete</Text>
+            </TouchableOpacity>
           </View>
         )}
       />
@@ -81,6 +94,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  deleteButton: {
+    backgroundColor: '#f44336',
+    padding: 8,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    alignSelf: 'flex-end',
+    width: 100
+  },
+  buttonText: {
+    color: 'white',
+    marginLeft: 5
+  }
 });
 
 export default ItineraryScreen;

@@ -2,7 +2,7 @@ export type RootStackParamList = {
   Home: undefined;
   PlacesToGo: { destination: string };
   Map: { places: Place[];
-    region: MapRegion;
+    region?: MapRegion;
    };
   Flights: { 
     origin: string;
@@ -12,6 +12,10 @@ export type RootStackParamList = {
   Itinerary: { savedPlans: Place[] };
   Hotels: { location: Coordinates };
   Activities: { location: Coordinates };
+  Calendar: undefined;
+  CurrencyConverter: undefined;
+  Visa: undefined;
+  ExpenseTracker: undefined;
 };
 
 export interface Place {
@@ -65,4 +69,11 @@ export interface MapRegion {
   longitude: number;
   latitudeDelta: number;
   longitudeDelta: number;
+}
+
+export interface Expense {
+  id: string;
+  name: string;
+  amount: number;
+  color: string;
 }

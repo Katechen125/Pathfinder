@@ -1,8 +1,9 @@
 // Import Axios for making HTTP requests
 import axios from 'axios';
 
+const API_BASE = 'http://localhost:3000';
 const GOOGLE_API_KEY = 'AIzaSyBnYEWI8a36nAJDsONKSt9UeMseVvqAlYI';
-const USE_MOCK_DATA = true; // Set to false when API is working correctly
+const USE_MOCK_DATA = false; // Set to false when API is working correctly
 
 // Mock data for development when APIs fail
 const MOCK_PLACES = [
@@ -28,6 +29,8 @@ const MOCK_PLACES = [
     location: { lat: 20.6843, lng: -88.5677 }
   }
 ];
+
+
 
 export const geocodeLocation = async (address: string) => {
   try {
@@ -56,22 +59,14 @@ export const geocodeLocation = async (address: string) => {
   }
 };
 
-export const fetchPlaces = async (country: string) => {
+export const fetchPlaces = async (query: string) => { // Changed from country to query
   try {
-    // Return mock data if enabled
-    if (USE_MOCK_DATA) {
-      console.log('Using mock places data for:', country);
-      return MOCK_PLACES;
-    }
+    if (USE_MOCK_DATA) return MOCK_PLACES;
     
     const response = await axios.get(
-      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=top+attractions+in+${encodeURIComponent(country)}&key=${GOOGLE_API_KEY}`
+      `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}+attractions&type=tourist_attraction&key=${GOOGLE_API_KEY}`
     );
     
-    if (!response.data?.results) {
-      throw new Error('Invalid API response');
-    }
-
     return response.data.results.map((place: any) => ({
       id: place.place_id,
       name: place.name,
@@ -129,56 +124,71 @@ export const searchFlights = async (origin: string, destination: string, date: s
 
 export const searchHotels = async (lat: number, lng: number) => {
   try {
-  const response = await axios.get(
-      'https://api.geoapify.com/v2/places',
-      {
-      params: {
-      categories: 'accommodation.hotel',
-      filter: `circle:${lng},${lat},5000`, // 5km radius
-      limit: 20,
-      apiKey: 'f078a3ebd9a64978bb0fc1d6c81c8ce7'
-      }
-  }
-  );
-  
-  return response.data.features.map((item: any) => ({
-        id: item.properties.place_id,
-        name: item.properties.name,
-        price: Math.floor(Math.random() * 200) + 50, // Mock price
-        rating: item.properties.rating || 4,
-        address: item.properties.formatted
-  }));
-        } catch (error) {
-        console.error('Hotels error:', error);
-        return [];
+    const response = await axios.get(
+      'https://api.geoapify.com/v2/places', {
+        params: {
+          categories: 'accommodation',
+          filter: `circle:${lng},${lat},5000`,
+          limit: 20,
+          apiKey: 'f078a3ebd9a64978bb0fc1d6c81c8ce7'
         }
-        };
+      }
+    );
+    
+    return response.data.features.map((item: any) => ({
+      id: item.properties.place_id,
+      name: item.properties.name,
+      price: item.properties.price || Math.floor(Math.random() * 200) + 50,
+      rating: item.properties.rank?.rating || 4,
+      address: item.properties.formatted
+    }));
+  } catch (error) {
+    console.error('Hotels error:', error);
+    return [];
+  }
+};
+
   
-  export const searchActivities = async (lat: number, lng: number) => {
+export const searchActivities = async (lat: number, lng: number) => {
   try {
-      const response = await axios.get(
-      'https://api.geoapify.com/v2/places',
-      {
+    const response = await axios.get(
+      'https://api.geoapify.com/v2/places', {
+        params: {
+          categories: 'entertainment,tourism',
+          filter: `circle:${lng},${lat},5000`,
+          limit: 20,
+          apiKey: 'f078a3ebd9a64978bb0fc1d6c81c8ce7'
+        }
+      }
+    );
+
+    return response.data.features.map((item: any) => ({
+      id: item.properties.place_id,
+      name: item.properties.name,
+      address: item.properties.formatted,
+      rating: item.properties.rank?.rating || 4,
+      category: item.properties.categories?.[0] || 'activity'
+    }));
+  } catch (error) {
+    console.error('Activities error:', error);
+    return [];
+  }
+};
+
+export const checkVisaRequirements = async (
+  nationality: string, 
+  destination: string
+) => {
+  try {
+    const response = await axios.get(`${API_BASE}/api/visa`, {
       params: {
-      categories: 'tourism,entertainment',
-      filter: `circle:${lng},${lat},5000`,
-      limit: 20,
-      apiKey: 'f078a3ebd9a64978bb0fc1d6c81c8ce7'
+        nationality: nationality.replace(/ /g, '_'),
+        destination
+      }
+    });
+    return response.data.requirement;
+  } catch (error) {
+    console.error('API Error:', error);
+    throw new Error('Failed to check visa requirements');
   }
-  }
-  );
-  
-  return response.data.features.map((item: any) => ({
-        id: item.properties.place_id,
-        name: item.properties.name,
-        address: item.properties.formatted,
-        rating: item.properties.rating || 4,
-        category: item.properties.categories[0]
-        }));
-        } catch (error) {
-        console.error('Activities error:', error);
-        return [];
-  }
-  };
-
-
+};

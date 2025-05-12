@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { View, StyleSheet} from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, Place } from '../Services/types';

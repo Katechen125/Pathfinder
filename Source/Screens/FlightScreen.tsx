@@ -45,7 +45,7 @@ const FlightsScreen: React.FC<Props> = ({ route }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>{`Flights from ${origin} to ${destination}`}</Text>
+      <Text style={styles.title}>{`Flights to ${destination}`}</Text>
       <FlatList
         data={flights}
         keyExtractor={(item) => item.id}
