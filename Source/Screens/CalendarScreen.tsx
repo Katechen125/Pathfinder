@@ -20,7 +20,7 @@ const CalendarScreen = () => {
     const eventConfig = {
       title: eventTitle || 'New Event',
       startDate: `${selectedDate}T10:00:00.000Z`,
-      endDate: `${selectedDate}T11:00:00.000Z`, 
+      endDate: `${selectedDate}T11:00:00.000Z`,
       notes: eventDescription || 'Added from Pathfinder App'
     };
 
@@ -48,14 +48,14 @@ const CalendarScreen = () => {
           };
           setSelectedDates(newDates);
         }}
-        current={selectedDate} 
+        current={selectedDate}
         theme={{
           todayTextColor: '#2196F3',
           selectedDayBackgroundColor: '#4CAF50'
         }}
       />
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
           if (selectedDate) {
@@ -78,14 +78,14 @@ const CalendarScreen = () => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Add Event</Text>
             <Text style={styles.modalLabel}>Date: {selectedDate}</Text>
-            
+
             <TextInput
               style={styles.input}
               placeholder="Event Title"
               value={eventTitle}
               onChangeText={setEventTitle}
             />
-            
+
             <TextInput
               style={[styles.input, styles.descriptionInput]}
               placeholder="Description"
@@ -93,16 +93,16 @@ const CalendarScreen = () => {
               onChangeText={setEventDescription}
               multiline
             />
-            
+
             <View style={styles.buttonRow}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.button, styles.cancelButton]}
                 onPress={() => setShowAddEvent(false)}
               >
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.button, styles.saveButton]}
                 onPress={addEventToCalendar}
               >

@@ -85,10 +85,10 @@ const CurrencyConverterScreen = () => {
             onValueChange={setBaseCurrency}
           >
             {CURRENCIES.map(currency => (
-              <Picker.Item 
-                key={currency.code} 
-                label={`${currency.flag} ${currency.code} - ${currency.name}`} 
-                value={currency.code} 
+              <Picker.Item
+                key={currency.code}
+                label={`${currency.flag} ${currency.code} - ${currency.name}`}
+                value={currency.code}
               />
             ))}
           </Picker>
@@ -104,10 +104,10 @@ const CurrencyConverterScreen = () => {
             onValueChange={setTargetCurrency}
           >
             {CURRENCIES.map(currency => (
-              <Picker.Item 
-                key={currency.code} 
-                label={`${currency.flag} ${currency.code} - ${currency.name}`} 
-                value={currency.code} 
+              <Picker.Item
+                key={currency.code}
+                label={`${currency.flag} ${currency.code} - ${currency.name}`}
+                value={currency.code}
               />
             ))}
           </Picker>

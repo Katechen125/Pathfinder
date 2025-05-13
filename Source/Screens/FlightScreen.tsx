@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndi
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList, Flight } from '../Services/types';
 import { searchFlights } from '../Services/API';
- 
+
 interface Props {
   route: RouteProp<RootStackParamList, 'Flights'>;
 }
@@ -56,11 +56,11 @@ const FlightsScreen: React.FC<Props> = ({ route }) => {
             <Text>Price: €{item.price}</Text>
             <Text>Departure: {item.departureDate}</Text>
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={[styles.actionButton, styles.saveButton]} 
+              <TouchableOpacity style={[styles.actionButton, styles.saveButton]}
                 onPress={() => saveFlight(item)}>
                 <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.actionButton, styles.bookButton]} 
+              <TouchableOpacity style={[styles.actionButton, styles.bookButton]}
                 onPress={() => Alert.alert('Redirect to booking website...')}>
                 <Text style={styles.buttonText}>Book Now</Text>
               </TouchableOpacity>
@@ -88,27 +88,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  actionButton:{
-   paddingVertical :8 ,
-   paddingHorizontal :12 ,
-   borderRadius :8 ,
-   minWidth :80 ,
-   alignItems :'center'
-},
-saveButton:{ 
-backgroundColor:'#4CAF50'},
-bookButton:{ 
-backgroundColor:'#FF9800'},
-buttonText:{
-color:'white',
-fontWeight:'bold'
-},
-airline: {
-  fontSize: 16,
-  fontWeight: '600',
-  color: '#2d3436',
-  marginBottom: 4
-}
+  actionButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    minWidth: 80,
+    alignItems: 'center'
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50'
+  },
+  bookButton: {
+    backgroundColor: '#FF9800'
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold'
+  },
+  airline: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2d3436',
+    marginBottom: 4
+  }
 });
 
 export default FlightsScreen;

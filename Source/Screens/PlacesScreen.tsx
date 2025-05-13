@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Pressable } from 'react-native';
-import { fetchPlaces, getPhotoUrl, geocodeLocation,searchHotels,searchActivities } from '../Services/API';
+import {
+  fetchPlaces, getPhotoUrl, geocodeLocation, searchHotels, searchActivities, MOCK_PLACES,
+  MOCK_HOTELS, MOCK_ACTIVITIES
+} from '../Services/API';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, Place, MapRegion } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -35,7 +38,7 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
     try {
       setLoading(true);
       const coords = await geocodeLocation(query);
-      
+
       if (coords) {
         const [placesData, hotelsData, activitiesData] = await Promise.all([
           fetchPlaces(query),
@@ -46,7 +49,7 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
         setPlaces(placesData);
         setHotels(hotelsData);
         setActivities(activitiesData);
-        
+
         setRegion({
           latitude: coords.lat,
           longitude: coords.lng,
@@ -55,10 +58,11 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
         });
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to load data. Please try again.');
-      setPlaces([]);
-      setHotels([]);
-      setActivities([]);
+      Alert.alert('Info', 'Using demo data');
+      setPlaces(MOCK_PLACES as Place[]);
+      setHotels(MOCK_HOTELS);
+      setActivities(MOCK_ACTIVITIES);
+      setRegion(DEFAULT_REGION);
     } finally {
       setLoading(false);
     }
@@ -82,7 +86,7 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
       ),
     });
   }, [navigation]);
-  
+
 
 
   // Handle initial load and subsequent searches
@@ -166,7 +170,7 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
       }
     },
   ];
-  
+
   const saveToPlan = (place: Place) => {
     setSavedPlans(prev => [...prev, { ...place, saved: true }]);
     Alert.alert('Saved', `${place.name} added to itinerary!`);
@@ -226,21 +230,21 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
                   <Icon name="image" size={50} color="#ccc" />
                 </View>
               )}
-              
+
               <Text style={styles.placeName}>{place.name}</Text>
               <Text style={styles.placeAddress}>{place.address}</Text>
-        
+
               <View style={styles.buttonRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.actionButton, styles.saveButton]}
                   onPress={() => saveToPlan(place)}
                 >
                   <Icon name="bookmark" size={18} color="white" />
                   <Text style={styles.buttonText}> Save</Text>
                 </TouchableOpacity>
-        
+
                 <View style={styles.iconRow}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.iconButton}
                     onPress={() => navigation.navigate('Flights', {
                       origin: 'Current Location',
@@ -249,6 +253,15 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
                     })}
                   >
                     <Icon name="plane" size={20} color="#9C27B0" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.iconButton}
+                    onPress={() => navigation.navigate('Hotels', {
+                      location: place.location
+                    })}
+                  >
+                    <Icon name="hotel" size={20} color="#2196F3" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -360,57 +373,57 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0'
   },
 
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    loadingText: {
-      marginTop: 10,
-      color: '#666',
-    },
-    emptyState: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 20,
-    },
-    emptyText: {
-      fontSize: 16,
-      color: '#666',
-      marginTop: 10,
-      textAlign: 'center',
-    },
-    menuOverlay: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.2)',
-      justifyContent: 'flex-start',
-      alignItems: 'flex-end',
-    },
-    menuContainer: {
-      backgroundColor: '#fff',
-      borderRadius: 8,
-      marginTop: 50,
-      marginRight: 10,
-      paddingVertical: 10,
-      minWidth: 220,
-      elevation: 5,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
-    },
-    menuItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: 12,
-      paddingHorizontal: 20,
-    },
-    menuText: {
-      fontSize: 16,
-      color: '#333',
-    },
-    
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#666',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    marginTop: 50,
+    marginRight: 10,
+    paddingVertical: 10,
+    minWidth: 220,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  menuText: {
+    fontSize: 16,
+    color: '#333',
+  },
+
 });
 
 export default PlacesScreen;

@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity,Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList, Coordinates} from '../Services/types';
+import { RootStackParamList, Coordinates } from '../Services/types';
 import { searchActivities } from '../Services/API';
 
 interface Props {
@@ -37,7 +36,7 @@ const ActivitiesScreen: React.FC<Props> = ({ route }) => {
         setLoading(false);
       }
     };
-  
+
     fetchActivities();
   }, [location]);
 
@@ -71,14 +70,14 @@ const ActivitiesScreen: React.FC<Props> = ({ route }) => {
             <Text>Rating: {item.rating}/5</Text>
             <Text>Address: {item.address || 'Address not available'}</Text>
             <View style={styles.buttonRow}>
-              <TouchableOpacity 
-                style={[styles.button, styles.saveButton]} 
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton]}
                 onPress={() => saveActivity(item)}
               >
                 <Text style={styles.buttonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, styles.detailsButton]} 
+              <TouchableOpacity
+                style={[styles.button, styles.detailsButton]}
                 onPress={() => Alert.alert('More details coming soon!')}
               >
                 <Text style={styles.buttonText}>Details</Text>
@@ -150,8 +149,8 @@ const styles = StyleSheet.create({
   },
   loadMoreText: {
     color: '#fff',
-    fontWeight:'bold'
-},
+    fontWeight: 'bold'
+  },
 });
 
 export default ActivitiesScreen;

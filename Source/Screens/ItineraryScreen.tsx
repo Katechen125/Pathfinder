@@ -3,15 +3,15 @@ import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity } from 'react
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, MapRegion, Place } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { getPhotoUrl } from '../Services/API'; 
+import { getPhotoUrl } from '../Services/API';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
 interface Props {
   route: RouteProp<RootStackParamList, 'Itinerary'>;
 }
 
-const ItineraryScreen: React.FC<Props> = ({ route }) => { 
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Itinerary'>>(); 
+const ItineraryScreen: React.FC<Props> = ({ route }) => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Itinerary'>>();
   const { savedPlans } = route.params;
   const [plans, setPlans] = useState(savedPlans);
 
@@ -23,8 +23,9 @@ const ItineraryScreen: React.FC<Props> = ({ route }) => {
   };
 
   const deletePlan = (id: string) => {
-    setPlans(plans.filter(plan => plan.id !== id));
-  };
+    setPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
+
+  }
 
   return (
     <View style={styles.container}>
@@ -42,7 +43,7 @@ const ItineraryScreen: React.FC<Props> = ({ route }) => {
             )}
             <Text style={styles.placeName}>{item.name}</Text>
             <Text style={styles.placeAddress}>{item.address}</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.deleteButton}
               onPress={() => deletePlan(item.id)}
             >

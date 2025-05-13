@@ -1,11 +1,11 @@
 
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native'; 
+import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from './Source/Services/types';
 
 // Import screens for the app 
-import HomeScreen from './Source/Screens/HomeScreen'; 
+import HomeScreen from './Source/Screens/HomeScreen';
 import PlacesScreen from './Source/Screens/PlacesScreen';
 import MapScreen from './Source/Screens/MapScreen';
 import FlightsScreen from './Source/Screens/FlightScreen';
@@ -19,7 +19,7 @@ import CurrencyConverterScreen from './Source/Screens/CurrencyConverterScreen';
 
 
 // Create a stack navigator for managing screen transitions
-const Stack = createStackNavigator<RootStackParamList>(); 
+const Stack = createStackNavigator<RootStackParamList>();
 
 const App = () => {
   return (

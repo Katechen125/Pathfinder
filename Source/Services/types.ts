@@ -77,3 +77,11 @@ export interface Expense {
   amount: number;
   color: string;
 }
+
+export type SavedItemType = 'place' | 'hotel' | 'activity' | 'flight';
+
+export interface SavedItem {
+  id: string;            
+  type: SavedItemType;   
+  data: Place | Hotel | Activity | Flight; 
+}

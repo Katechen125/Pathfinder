@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { Expense } from '../Services/types';
 
+interface Expense {
+  id: string;
+  name: string;
+  amount: number;
+  color: string;
+}
 
 const categories = [
   { name: 'Food', color: '#FF6384' },
@@ -19,6 +24,22 @@ const ExpenseScreen = () => {
   const [amount, setAmount] = useState('');
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
+  const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+  const parsedLimit = parseFloat(limit) || 0;
+  const remaining = parsedLimit - totalSpent;
+  const progressPercentage = Math.min((totalSpent / parsedLimit) * 100, 100);
+
+  const categoryTotals = categories.map(cat => {
+    const total = expenses
+      .filter(e => e.name === cat.name)
+      .reduce((sum, e) => sum + e.amount, 0);
+    return {
+      ...cat,
+      total,
+      percentage: total > 0 ? (total / totalSpent) * 100 : 0
+    };
+  }).filter(cat => cat.total > 0);
+
   const addExpense = () => {
     if (!amount || !limit) {
       Alert.alert('Error', 'Please fill all fields');
@@ -26,24 +47,24 @@ const ExpenseScreen = () => {
     }
     const parsedAmount = parseFloat(amount);
     const parsedLimit = parseFloat(limit);
+
     if (isNaN(parsedAmount) || isNaN(parsedLimit)) {
       Alert.alert('Error', 'Please enter valid numbers');
       return;
     }
+
     const total = expenses.reduce((sum, e) => sum + e.amount, 0);
     if (total + parsedAmount > parsedLimit) {
       Alert.alert('Limit Exceeded!', 'This expense would exceed your budget limit.');
       return;
     }
-    setExpenses([
-      ...expenses,
-      {
-        id: Date.now().toString(),
-        name: category,
-        amount: parsedAmount,
-        color: categories.find(c => c.name === category)!.color
-      }
-    ]);
+
+    setExpenses([...expenses, {
+      id: Date.now().toString(),
+      name: category,
+      amount: parsedAmount,
+      color: categories.find(c => c.name === category)!.color
+    }]);
     setAmount('');
   };
 
@@ -54,22 +75,16 @@ const ExpenseScreen = () => {
   useEffect(() => {
     const total = expenses.reduce((sum, e) => sum + e.amount, 0);
     const parsedLimit = parseFloat(limit);
+
     if (!isNaN(parsedLimit) && total > parsedLimit * 0.9 && total < parsedLimit) {
       Alert.alert('Warning', 'You\'re approaching your budget limit!');
     }
   }, [expenses, limit]);
 
-  const totalSpent = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const parsedLimit = parseFloat(limit) || 0;
-  const remaining = parsedLimit - totalSpent;
-
-  const progressColor = expenses.length > 0
-    ? expenses[expenses.length - 1].color
-    : '#4CAF50';
-
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Travel Budget Tracker</Text>
+
       <View style={styles.budgetCard}>
         <Text style={styles.label}>Set Budget Limit:</Text>
         <TextInput
@@ -80,6 +95,7 @@ const ExpenseScreen = () => {
           style={styles.input}
         />
       </View>
+
       <View style={styles.expenseForm}>
         <Text style={styles.label}>Add New Expense:</Text>
         <Picker
@@ -98,7 +114,7 @@ const ExpenseScreen = () => {
           onChangeText={setAmount}
           style={styles.input}
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.addButton}
           onPress={addExpense}
         >
@@ -106,9 +122,27 @@ const ExpenseScreen = () => {
           <Text style={styles.buttonText}>Add Expense</Text>
         </TouchableOpacity>
       </View>
+
       {parsedLimit > 0 && (
         <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>Budget Summary</Text>
+          <Text style={styles.summaryTitle}>Budget Usage</Text>
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressBar, { width: `${progressPercentage}%` }]}>
+              <View style={styles.progressSegments}>
+                {categoryTotals.map((cat, index) => (
+                  <View
+                    key={cat.name}
+                    style={{
+                      flex: cat.percentage / 100,
+                      backgroundColor: cat.color,
+                      borderRightWidth: index === categoryTotals.length - 1 ? 0 : 2,
+                      borderRightColor: '#fff'
+                    }}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
           <View style={styles.summaryRow}>
             <Text>Total Budget:</Text>
             <Text style={styles.budgetAmount}>${parsedLimit.toFixed(2)}</Text>
@@ -124,15 +158,6 @@ const ExpenseScreen = () => {
               remaining < 0 ? styles.negative : {}
             ]}>${remaining.toFixed(2)}</Text>
           </View>
-          <View style={styles.progressContainer}>
-            <View 
-              style={[
-                styles.progressBar, 
-                { width: `${Math.min(totalSpent/parsedLimit * 100, 100)}%`, backgroundColor: progressColor },
-                totalSpent > parsedLimit * 0.9 ? styles.warningBar : {}
-              ]} 
-            />
-          </View>
         </View>
       )}
 
@@ -146,7 +171,7 @@ const ExpenseScreen = () => {
               <View style={[styles.categoryDot, { backgroundColor: expense.color }]} />
               <Text style={styles.expenseName}>{expense.name}</Text>
               <Text style={styles.expenseAmount}>${expense.amount.toFixed(2)}</Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.deleteButton}
                 onPress={() => deleteExpense(expense.id)}
               >
@@ -254,14 +279,18 @@ const styles = StyleSheet.create({
     height: 10,
     backgroundColor: '#e0e0e0',
     borderRadius: 5,
-    marginTop: 10
+    marginVertical: 10,
+    overflow: 'hidden'
   },
   progressBar: {
     height: '100%',
-    borderRadius: 5
+    borderRadius: 5,
+    overflow: 'hidden'
   },
-  warningBar: {
-    backgroundColor: '#FF9800'
+  progressSegments: {
+    flexDirection: 'row',
+    height: '100%',
+    width: '100%'
   },
   expensesList: {
     backgroundColor: 'white',

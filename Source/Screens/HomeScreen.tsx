@@ -11,8 +11,8 @@ const HomeScreen: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   return (
-    <ImageBackground 
-      source={{uri: 'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&w=800&q=80'}} 
+    <ImageBackground
+      source={{ uri: 'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&w=800&q=80' }}
       style={styles.container}
     >
       <View style={styles.overlay}>
@@ -25,7 +25,7 @@ const HomeScreen: React.FC = () => {
           style={styles.searchInput}
           placeholderTextColor="#555"
         />
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.searchButton}
           onPress={() => navigation.navigate('PlacesToGo', { destination: searchTerm })}
         >
