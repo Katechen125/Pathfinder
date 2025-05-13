@@ -1,6 +1,6 @@
 export type RootStackParamList = {
-  Home: undefined;
-  PlacesToGo: { destination: string };
+  Welcome: undefined;
+  Home: { destination: string };
   Map: { places: Place[];
     region?: MapRegion;
    };

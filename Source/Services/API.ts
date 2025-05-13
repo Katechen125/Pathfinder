@@ -1,9 +1,8 @@
 // Import Axios for making HTTP requests
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:3000';
 const GOOGLE_API_KEY = 'AIzaSyBnYEWI8a36nAJDsONKSt9UeMseVvqAlYI';
-const USE_MOCK_DATA = true; // Set to false when API is working correctly
+const USE_MOCK_DATA = false; // Set to false when API is working correctly
 
 // Mock data for development when APIs fail
 export const MOCK_PLACES = [
@@ -30,20 +29,28 @@ export const MOCK_PLACES = [
   }
 ];
 
-const mockGeocode = (address: string) => {
-  console.log('Using mock geocoding');
-  return address.toLowerCase().includes('mexico') ? 
-    { lat: 19.4326, lng: -99.1332 } : 
-    { lat: 48.8566, lng: 2.3522 };
+const MOCK_VISA_REQUIREMENTS: { [key: string]: string } = { //revise the screen and the options that are offer
+  // North America
+  'United_States-Mexico': 'No visa required for tourism (180 days)',
+  'Canada-Mexico': 'No visa required (180 days)',
+  
+  // Europe
+  'German-Mexico': 'No visa required (90 days)',
+  'French-Mexico': 'No visa required (90 days)',
+  'Italian-Mexico': 'No visa required (90 days)',
+  
+  // Asia
+  'Japanese-Mexico': 'No visa required (180 days)',
+  'South_Korean-Mexico': 'No visa required (180 days)',
+  'Chinese-Mexico': 'FMM Tourist Card required on arrival',
+  
+  // Additional countries
+  'Brazilian-Mexico': 'No visa required (180 days)',
+  'Argentine-Mexico': 'No visa required (90 days)',
+  'Australian-Mexico': 'No visa required (180 days)',
+  
+  'default': 'This visa requierement is not supported in this version yet. Contact offical embassy or consulate'
 };
-
-const placeMapper = (place: any) => ({
-  id: place.place_id,
-  name: place.name,
-  address: place.formatted_address,
-  photoReference: place.photos?.[0]?.photo_reference || undefined, 
-  location: place.geometry.location,
-});
 
 export const MOCK_HOTELS = [
   {
@@ -64,6 +71,21 @@ export const MOCK_ACTIVITIES = [
     category: 'Tour'
   }
 ];
+
+const mockGeocode = (address: string) => {
+  console.log('Using mock geocoding');
+  return address.toLowerCase().includes('mexico') ? 
+    { lat: 19.4326, lng: -99.1332 } : 
+    { lat: 48.8566, lng: 2.3522 };
+};
+
+const placeMapper = (place: any) => ({
+  id: place.place_id,
+  name: place.name,
+  address: place.formatted_address,
+  photoReference: place.photos?.[0]?.photo_reference || undefined, 
+  location: place.geometry.location,
+});
 
 const hotelMapper = (item: any) => ({
   id: item.properties.place_id,
@@ -90,10 +112,22 @@ export const geocodeLocation = async (address: string) => {
       { timeout: 10000 }
     );
     
-    return response.data?.results?.[0]?.geometry?.location || mockGeocode(address);
+    if (!response.data?.results?.[0]) {
+      throw new Error('No results found');
+    }
+    
+    return {
+      lat: response.data.results[0].geometry.location.lat,
+      lng: response.data.results[0].geometry.location.lng,
+      address: response.data.results[0].formatted_address
+    };
+    
   } catch (error) {
     console.error('Geocoding error:', error);
-    return mockGeocode(address);
+    return {
+      ...mockGeocode(address),
+      address: 'Approximate location'
+    };
   }
 };
 
@@ -199,31 +233,10 @@ export const searchActivities = async (lat: number, lng: number) => {
 };
 
 export const checkVisaRequirements = async (
-  nationality: string, 
+  nationality: string,
   destination: string
 ) => {
-  const MOCK_VISA_REQUIREMENTS: { [key: string]: string } = {
-    'United States-France': 'No visa required for stays up to 90 days.',
-    'United States-Mexico': 'No visa required for tourism up to 180 days.',
-    'India-France': 'Visa required prior to arrival.',
-    'India-Mexico': 'Electronic Authorization (SAE) required for tourism.',
-    'default': 'Visa requirements information is currently not supported. Please check with the official embassy or consulate.'
-  };
-
-  try {
-    
-    if (USE_MOCK_DATA) return MOCK_VISA_REQUIREMENTS;
-
-    const response = await axios.get(`${API_BASE}/api/visa`, {
-      params: {
-        nationality: nationality.replace(/ /g, '_'),
-        destination
-      }
-    });
-    return response.data.requirement;
-  } catch (error) {
-    console.error('API Error:', error);
-    const key = `${nationality}-${destination}`;
-    return MOCK_VISA_REQUIREMENTS[key] || MOCK_VISA_REQUIREMENTS['default'];
-  }
+  const key = `${nationality}-${destination.replace(/ /g, '_')}`;
+  
+  return MOCK_VISA_REQUIREMENTS[key] || MOCK_VISA_REQUIREMENTS['default'];
 };
