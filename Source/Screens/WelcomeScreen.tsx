@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground } 
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../Services/types';
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Welcome'>;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -27,7 +27,7 @@ const HomeScreen: React.FC = () => {
         />
         <TouchableOpacity
           style={styles.searchButton}
-          onPress={() => navigation.navigate('PlacesToGo', { destination: searchTerm })}
+          onPress={() => navigation.navigate('Home', { destination: searchTerm })}
         >
           <Text style={styles.buttonText}>Explore</Text>
         </TouchableOpacity>
