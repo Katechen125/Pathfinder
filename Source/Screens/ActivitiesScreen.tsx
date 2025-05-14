@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
-import { RootStackParamList } from '../Services/types';
+import { RootStackParamList, Coordinates } from '../Services/types';
 import { searchActivities } from '../Services/API';
 
 interface Props {
