@@ -5,8 +5,8 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from './Source/Services/types';
 
 // Import screens for the app 
-import HomeScreen from './Source/Screens/WelcomeScreen';
-import PlacesScreen from './Source/Screens/HomeScreen';
+import WelcomeScreen from './Source/Screens/WelcomeScreen';
+import HomeScreen from './Source/Screens/HomeScreen';
 import MapScreen from './Source/Screens/MapScreen';
 import FlightsScreen from './Source/Screens/FlightScreen';
 import ItineraryScreen from './Source/Screens/ItineraryScreen';
@@ -24,9 +24,9 @@ const Stack = createStackNavigator<RootStackParamList>();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Welcome" component={HomeScreen} />
-        <Stack.Screen name="Home" component={PlacesScreen} />
+      <Stack.Navigator initialRouteName="Welcome">
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Map" component={MapScreen} />
         <Stack.Screen name="Flights" component={FlightsScreen} />
         <Stack.Screen name="Itinerary" component={ItineraryScreen} />

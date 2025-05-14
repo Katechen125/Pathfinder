@@ -220,7 +220,7 @@ export const searchActivities = async (lat: number, lng: number) => {
           categories: 'entertainment,tourism',
           filter: `circle:${lng},${lat},5000`,
           limit: 20,
-          apiKey: 'f078a3ebd9a64978bb0fc1d6c81c8ce7'
+          apiKey: '1a24812bbc1f45cc8f963df35e7594c8'
         }
       }
     );
