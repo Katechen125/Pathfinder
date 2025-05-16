@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, Animated } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { getCurrentUser, saveExpenses, loadExpenses } from '../Services/storage';
 
 interface Expense {
   id: string;
@@ -11,11 +12,11 @@ interface Expense {
 }
 
 const categories = [
-  { name: 'Food', color: '#FF6384' },
-  { name: 'Transport', color: '#36A2EB' },
-  { name: 'Accommodation', color: '#FFCE56' },
-  { name: 'Activities', color: '#4BC0C0' },
-  { name: 'Other', color: '#8E44AD' }
+  { name: 'Food', color: '#FF6384', icon: 'cutlery' },
+  { name: 'Transport', color: '#36A2EB', icon: 'bus' },
+  { name: 'Accommodation', color: '#FFCE56', icon: 'bed' },
+  { name: 'Activities', color: '#4BC0C0', icon: 'ticket' },
+  { name: 'Other', color: '#8E44AD', icon: 'ellipsis-h' }
 ];
 
 const ExpenseScreen = () => {
@@ -23,11 +24,34 @@ const ExpenseScreen = () => {
   const [category, setCategory] = useState(categories[0].name);
   const [amount, setAmount] = useState('');
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [progressAnim] = useState(new Animated.Value(0));
+
+  useEffect(() => {
+    const loadData = async () => {
+      const username = await getCurrentUser();
+      if (!username) return;
+      
+      const data = await loadExpenses(username);
+      setExpenses(data.expenses);
+      setLimit(data.limit);
+    };
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    const saveData = async () => {
+      const username = await getCurrentUser();
+      if (!username) return;
+      
+      await saveExpenses(username, { expenses, limit });
+    };
+    saveData();
+  }, [expenses, limit]);
 
   const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
   const parsedLimit = parseFloat(limit) || 0;
   const remaining = parsedLimit - totalSpent;
-  const progressPercentage = Math.min((totalSpent / parsedLimit) * 100, 100);
+  const progressPercentage = parsedLimit > 0 ? Math.min((totalSpent / parsedLimit) * 100, 100) : 0;
 
   const categoryTotals = categories.map(cat => {
     const total = expenses
@@ -36,9 +60,18 @@ const ExpenseScreen = () => {
     return {
       ...cat,
       total,
-      percentage: total > 0 ? (total / totalSpent) * 100 : 0
+      percentage: totalSpent > 0 ? (total / totalSpent) * 100 : 0
     };
   }).filter(cat => cat.total > 0);
+
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progressPercentage,
+      duration: 600,
+      useNativeDriver: false
+    }).start();
+  }, [progressPercentage]);
 
   const addExpense = () => {
     if (!amount || !limit) {
@@ -59,12 +92,15 @@ const ExpenseScreen = () => {
       return;
     }
 
-    setExpenses([...expenses, {
-      id: Date.now().toString(),
-      name: category,
-      amount: parsedAmount,
-      color: categories.find(c => c.name === category)!.color
-    }]);
+    setExpenses([
+      ...expenses,
+      {
+        id: Date.now().toString(),
+        name: category,
+        amount: parsedAmount,
+        color: categories.find(c => c.name === category)!.color
+      }
+    ]);
     setAmount('');
   };
 
@@ -82,43 +118,62 @@ const ExpenseScreen = () => {
   }, [expenses, limit]);
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.title}>Travel Budget Tracker</Text>
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+      <Text style={styles.title}>
+        <Icon name="money" size={24} color="#4CAF50" /> Travel Budget Tracker
+      </Text>
 
       <View style={styles.budgetCard}>
         <Text style={styles.label}>Set Budget Limit:</Text>
-        <TextInput
-          placeholder="Enter your total budget"
-          keyboardType="numeric"
-          value={limit}
-          onChangeText={setLimit}
-          style={styles.input}
-        />
+        <View style={styles.inputRow}>
+          <Icon name="usd" size={18} color="#2196F3" style={{ marginRight: 8 }} />
+          <TextInput
+            placeholder="Enter your total budget"
+            keyboardType="numeric"
+            value={limit}
+            onChangeText={setLimit}
+            style={styles.input}
+            maxLength={10}
+          />
+        </View>
       </View>
 
       <View style={styles.expenseForm}>
         <Text style={styles.label}>Add New Expense:</Text>
-        <Picker
-          selectedValue={category}
-          onValueChange={setCategory}
-          style={styles.picker}
-        >
-          {categories.map(c => (
-            <Picker.Item key={c.name} label={c.name} value={c.name} />
-          ))}
-        </Picker>
-        <TextInput
-          placeholder="Enter Amount"
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-          style={styles.input}
-        />
+        <View style={styles.inputRow}>
+          <Icon
+            name={categories.find(c => c.name === category)?.icon || 'tag'}
+            size={20}
+            color={categories.find(c => c.name === category)?.color || '#888'}
+            style={{ marginRight: 8 }}
+          />
+          <Picker
+            selectedValue={category}
+            onValueChange={setCategory}
+            style={styles.picker}
+            dropdownIconColor="#2196F3"
+          >
+            {categories.map(c => (
+              <Picker.Item key={c.name} label={c.name} value={c.name} />
+            ))}
+          </Picker>
+        </View>
+        <View style={styles.inputRow}>
+          <Icon name="plus" size={18} color="#4CAF50" style={{ marginRight: 8 }} />
+          <TextInput
+            placeholder="Enter Amount"
+            keyboardType="numeric"
+            value={amount}
+            onChangeText={setAmount}
+            style={styles.input}
+            maxLength={10}
+          />
+        </View>
         <TouchableOpacity
           style={styles.addButton}
           onPress={addExpense}
         >
-          <Icon name="plus" size={16} color="white" />
+          <Icon name="plus-circle" size={18} color="white" />
           <Text style={styles.buttonText}>Add Expense</Text>
         </TouchableOpacity>
       </View>
@@ -127,7 +182,12 @@ const ExpenseScreen = () => {
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Budget Usage</Text>
           <View style={styles.progressContainer}>
-            <View style={[styles.progressBar, { width: `${progressPercentage}%` }]}>
+            <Animated.View style={[styles.progressBar, {
+              width: progressAnim.interpolate({
+                inputRange: [0, 100],
+                outputRange: ['0%', '100%']
+              })
+            }]}>
               <View style={styles.progressSegments}>
                 {categoryTotals.map((cat, index) => (
                   <View
@@ -141,7 +201,7 @@ const ExpenseScreen = () => {
                   />
                 ))}
               </View>
-            </View>
+            </Animated.View>
           </View>
           <View style={styles.summaryRow}>
             <Text>Total Budget:</Text>
@@ -155,9 +215,18 @@ const ExpenseScreen = () => {
             <Text>Remaining:</Text>
             <Text style={[
               styles.remainingAmount,
-              remaining < 0 ? styles.negative : {}
-            ]}>${remaining.toFixed(2)}</Text>
+              remaining < 0 ? styles.negative : {},
+              remaining === 0 ? styles.zero : {}
+            ]}>
+              ${remaining.toFixed(2)}
+            </Text>
           </View>
+          {remaining < 0 && (
+            <View style={styles.overBudgetChip}>
+              <Icon name="exclamation-triangle" size={16} color="#fff" />
+              <Text style={styles.overBudgetText}>Over Budget!</Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -195,40 +264,57 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
-    textAlign: 'center'
+    textAlign: 'center',
+    color: '#2196F3',
+    letterSpacing: 0.5
   },
   budgetCard: {
     backgroundColor: 'white',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 15,
-    elevation: 2
+    elevation: 2,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
   },
   expenseForm: {
     backgroundColor: 'white',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 15,
-    elevation: 2
+    elevation: 2,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
   },
   label: {
     fontSize: 16,
     marginBottom: 5,
-    fontWeight: '500'
+    fontWeight: '500',
+    color: '#2d3436'
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15
   },
   input: {
+    flex: 1,
     height: 45,
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 8,
     padding: 10,
-    marginBottom: 15
+    backgroundColor: '#f8f9fa'
   },
   picker: {
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8
+    flex: 1,
+    minHeight: 45,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
   },
   addButton: {
     backgroundColor: '#4CAF50',
@@ -236,24 +322,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
-    borderRadius: 8
+    borderRadius: 8,
+    marginTop: 4,
+    elevation: 2,
   },
   buttonText: {
     color: 'white',
-    marginLeft: 5,
-    fontSize: 16
+    marginLeft: 7,
+    fontSize: 16,
+    fontWeight: 'bold'
   },
   summaryCard: {
     backgroundColor: 'white',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 15,
-    elevation: 2
+    elevation: 2,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
   },
   summaryTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 10
+    marginBottom: 10,
+    color: '#2196F3'
   },
   summaryRow: {
     flexDirection: 'row',
@@ -275,16 +369,19 @@ const styles = StyleSheet.create({
   negative: {
     color: '#f44336'
   },
+  zero: {
+    color: '#FF9800'
+  },
   progressContainer: {
-    height: 10,
+    height: 16,
     backgroundColor: '#e0e0e0',
-    borderRadius: 5,
+    borderRadius: 8,
     marginVertical: 10,
     overflow: 'hidden'
   },
   progressBar: {
     height: '100%',
-    borderRadius: 5,
+    borderRadius: 8,
     overflow: 'hidden'
   },
   progressSegments: {
@@ -292,17 +389,38 @@ const styles = StyleSheet.create({
     height: '100%',
     width: '100%'
   },
+  overBudgetChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    backgroundColor: '#f44336',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    marginTop: 6,
+  },
+  overBudgetText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginLeft: 6,
+    fontSize: 14
+  },
   expensesList: {
     backgroundColor: 'white',
     padding: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     marginBottom: 15,
-    elevation: 2
+    elevation: 2,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
   },
   listTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 10
+    marginBottom: 10,
+    color: '#2196F3'
   },
   emptyText: {
     textAlign: 'center',
@@ -318,17 +436,20 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0'
   },
   categoryDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 10
   },
   expenseName: {
-    flex: 1
+    flex: 1,
+    fontWeight: '500',
+    color: '#222'
   },
   expenseAmount: {
-    fontWeight: '500',
-    marginRight: 10
+    fontWeight: '600',
+    marginRight: 10,
+    color: '#2d3436'
   },
   deleteButton: {
     padding: 8

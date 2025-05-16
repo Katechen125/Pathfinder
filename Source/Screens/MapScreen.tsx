@@ -28,7 +28,7 @@ const MapScreen: React.FC<MapScreenProps> = ({ route }) => {
             }}
             title={place.name}
             description={place.address}
-            pinColor={place.saved ? '#FF0000' : '#0000FF'}
+            pinColor="#2196F3"
           />
         ))}
       </MapView>

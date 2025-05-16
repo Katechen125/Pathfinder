@@ -16,6 +16,9 @@ import VisaScreen from './Source/Screens/Visa';
 import CalendarScreen from './Source/Screens/CalendarScreen';
 import ExpenseScreen from './Source/Screens/TravelExpense';
 import CurrencyConverterScreen from './Source/Screens/CurrencyConverterScreen';
+import BookingScreen from './Source/Screens/BookingScreen';
+import BudgetScreen from './Source/Screens/BudgetScreen';
+import LoginScreen from './Source/Screens/LoginScreen';
 
 
 // Create a stack navigator for managing screen transitions
@@ -24,7 +27,7 @@ const Stack = createStackNavigator<RootStackParamList>();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="Welcome">
+      <Stack.Navigator initialRouteName="Login">
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Map" component={MapScreen} />
@@ -36,6 +39,9 @@ const App = () => {
         <Stack.Screen name="Calendar" component={CalendarScreen} />
         <Stack.Screen name="ExpenseTracker" component={ExpenseScreen} />
         <Stack.Screen name="CurrencyConverter" component={CurrencyConverterScreen} />
+        <Stack.Screen name="Booking" component={BookingScreen} />
+        <Stack.Screen name="Budget" component={BudgetScreen} />
+        <Stack.Screen name="Login" component={LoginScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

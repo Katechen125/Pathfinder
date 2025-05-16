@@ -19,7 +19,7 @@ const HomeScreen: React.FC = () => {
         <Text style={styles.title}>Pathfinder</Text>
         <Text style={styles.subtitle}>Discover your next adventure</Text>
         <TextInput
-          placeholder="Where would you like to go?"
+          placeholder="Where to? (City, Country)"
           value={searchTerm}
           onChangeText={setSearchTerm}
           style={styles.searchInput}

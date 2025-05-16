@@ -1,57 +1,82 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity } from 'react-native';
-import { RouteProp, useNavigation } from '@react-navigation/native';
-import { RootStackParamList, MapRegion, Place } from '../Services/types';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { getPhotoUrl } from '../Services/API';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { loadItinerary, deleteFromItinerary, getCurrentUser } from '../Services/storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { SavedItem } from '../Services/types';
 
-interface Props {
-  route: RouteProp<RootStackParamList, 'Itinerary'>;
-}
+const ItineraryScreen = () => {
+  const [plans, setPlans] = useState<SavedItem[]>([]);
 
-const ItineraryScreen: React.FC<Props> = ({ route }) => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Itinerary'>>();
-  const { savedPlans } = route.params;
-  const [plans, setPlans] = useState(savedPlans);
-
-  const defaultRegion: MapRegion = {
-    latitude: savedPlans[0]?.location.lat || 48.8566,
-    longitude: savedPlans[0]?.location.lng || 2.3522,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+  const loadData = async () => {
+    const username = await getCurrentUser();
+    if (!username) {
+      Alert.alert('Login Required', 'Please log in to view your itinerary');
+      return;
+    }
+    const items = await loadItinerary(username);
+    setPlans(items);
   };
 
-  const deletePlan = (id: string) => {
-    setPlans(prevPlans => prevPlans.filter(plan => plan.id !== id));
+  const handleDelete = async (id: string) => {
+    const username = await getCurrentUser();
+    if (!username) return;
 
-  }
+    try {
+      await deleteFromItinerary(username, id);
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete item');
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Saved Plans</Text>
+      <Text style={styles.header}>
+        <Icon name="bookmark" size={24} color="#2196F3" /> My Itinerary
+      </Text>
+
       <FlatList
-        data={savedPlans}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            {item.photoReference && (
-              <Image
-                source={{ uri: getPhotoUrl(item.photoReference) }}
-                style={styles.placeImage}
-              />
-            )}
-            <Text style={styles.placeName}>{item.name}</Text>
-            <Text style={styles.placeAddress}>{item.address}</Text>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => deletePlan(item.id)}
-            >
-              <Icon name="trash" size={18} color="white" />
-              <Text style={styles.buttonText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        data={plans}
+        keyExtractor={item => item.id}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No bookings yet. Start planning!</Text>
+        }
+        renderItem={({ item }) => {
+          const isFlight = item.type === 'flight';
+          const isPlace = item.type === 'place';
+          const isHotel = item.type === 'hotel';
+          const isActivity = item.type === 'activity';
+
+          return (
+            <View style={styles.card}>
+              {item.data.image && (
+                <Image source={{ uri: item.data.image }} style={styles.image} />
+              )}
+              <Text style={styles.title}>
+                {isFlight
+                  ? (item.data as any).airline
+                  : (item.data as any).name}
+              </Text>
+
+              <Text style={styles.subtitle}>
+                {item.type.toUpperCase()} •{' '}
+                {item.date && new Date(item.date).toLocaleDateString()}
+              </Text>
+
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDelete(item.id)}
+              >
+                <Icon name="trash" size={16} color="white" />
+                <Text style={styles.buttonText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        }}
       />
     </View>
   );
@@ -63,10 +88,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#f5f5f5',
   },
-  title: {
+  header: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    color: '#2196F3',
+    padding: 16,
+    margin: 16,
+    textAlign: 'center',
   },
   card: {
     backgroundColor: 'white',
@@ -79,21 +107,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  placeImage: {
+  image: {
     width: '100%',
-    height: 200,
+    height: 180,
     borderRadius: 10,
     marginBottom: 10,
   },
-  placeName: {
+  title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginBottom: 5,
   },
-  placeAddress: {
+  subtitle: {
     fontSize: 14,
     color: '#666',
+    marginBottom: 8,
   },
   deleteButton: {
     backgroundColor: '#f44336',
@@ -109,7 +138,12 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     marginLeft: 5
-  }
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 40,
+  },
 });
 
 export default ItineraryScreen;

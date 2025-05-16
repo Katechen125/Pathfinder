@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ActivityIndicator, TouchableOpacity, Alert, KeyboardAvoidingView, Keyboard, Platform } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import axios from 'axios';
@@ -63,99 +63,145 @@ const CurrencyConverterScreen = () => {
   const target = CURRENCIES.find(c => c.code === targetCurrency);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Currency Converter</Text>
-      <View style={styles.inputRow}>
-        <Text style={styles.currencyFlag}>{base?.flag}</Text>
-        <TextInput
-          style={styles.input}
-          placeholder={`Amount in ${base?.name}`}
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-          placeholderTextColor="#666"
-        />
-      </View>
-      <View style={styles.pickerRow}>
-        <View style={styles.pickerWrapper}>
-          <Text style={styles.pickerLabel}>From:</Text>
-          <Picker
-            selectedValue={baseCurrency}
-            style={styles.picker}
-            onValueChange={setBaseCurrency}
-          >
-            {CURRENCIES.map(currency => (
-              <Picker.Item
-                key={currency.code}
-                label={`${currency.flag} ${currency.code} - ${currency.name}`}
-                value={currency.code}
-              />
-            ))}
-          </Picker>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+    >
+      <View style={styles.container}>
+        <View style={styles.headerRow}>
+          <Icon name="exchange" size={28} color="#2196F3" style={{ marginRight: 10 }} />
+          <Text style={styles.title}>Currency Converter</Text>
         </View>
-        <TouchableOpacity style={styles.swapButton} onPress={swapCurrencies}>
-          <Icon name="exchange" size={24} color="#fff" />
-        </TouchableOpacity>
-        <View style={styles.pickerWrapper}>
-          <Text style={styles.pickerLabel}>To:</Text>
-          <Picker
-            selectedValue={targetCurrency}
-            style={styles.picker}
-            onValueChange={setTargetCurrency}
-          >
-            {CURRENCIES.map(currency => (
-              <Picker.Item
-                key={currency.code}
-                label={`${currency.flag} ${currency.code} - ${currency.name}`}
-                value={currency.code}
-              />
-            ))}
-          </Picker>
-        </View>
-      </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#2196F3" />
-      ) : (
-        <View style={styles.resultContainer}>
-          {rate > 0 && (
-            <Text style={styles.conversionRate}>
-              1 {baseCurrency} = {rate} {targetCurrency}
-            </Text>
-          )}
-          <Text style={styles.resultText}>
-            {amount || '0'} {baseCurrency} =
-          </Text>
-          <Text style={styles.resultAmount}>
-            {converted} {targetCurrency}
-          </Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>Amount</Text>
+          <View style={styles.inputRow}>
+            <Text style={styles.currencyFlag}>{base?.flag}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={`Enter amount in ${base?.name}`}
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+              placeholderTextColor="#888"
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.hideKeyboardButton}
+            onPress={() => Keyboard.dismiss()}
+          >
+            <Text style={styles.hideKeyboardText}>Hide Keyboard</Text>
+          </TouchableOpacity>
+          <View style={styles.pickerRow}>
+            <View style={styles.pickerWrapper}>
+              <Text style={styles.pickerLabel}>From</Text>
+              <Picker
+                selectedValue={baseCurrency}
+                style={styles.picker}
+                onValueChange={setBaseCurrency}
+                dropdownIconColor="#2196F3"
+              >
+                {CURRENCIES.map(currency => (
+                  <Picker.Item
+                    key={currency.code}
+                    label={`${currency.flag} ${currency.code} - ${currency.name}`}
+                    value={currency.code}
+                  />
+                ))}
+              </Picker>
+            </View>
+            <TouchableOpacity style={styles.swapButton} onPress={swapCurrencies}>
+              <Icon name="exchange" size={24} color="#fff" />
+            </TouchableOpacity>
+            <View style={styles.pickerWrapper}>
+              <Text style={styles.pickerLabel}>To</Text>
+              <Picker
+                selectedValue={targetCurrency}
+                style={styles.picker}
+                onValueChange={setTargetCurrency}
+                dropdownIconColor="#2196F3"
+              >
+                {CURRENCIES.map(currency => (
+                  <Picker.Item
+                    key={currency.code}
+                    label={`${currency.flag} ${currency.code} - ${currency.name}`}
+                    value={currency.code}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </View>
         </View>
-      )}
-    </View>
+
+        <View style={styles.resultCard}>
+          {loading ? (
+            <ActivityIndicator size="large" color="#2196F3" />
+          ) : (
+            <>
+              {rate > 0 && (
+                <Text style={styles.conversionRate}>
+                  <Icon name="info-circle" size={16} color="#2196F3" /> 1 {baseCurrency} = {rate} {targetCurrency}
+                </Text>
+              )}
+              <Text style={styles.resultText}>
+                {amount || '0'} {baseCurrency} =
+              </Text>
+              <Text style={styles.resultAmount}>
+                {converted} {targetCurrency}
+              </Text>
+            </>
+          )}
+        </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#f8f9fa',
+    padding: 18,
+    backgroundColor: '#f4f8fb',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 28,
+    marginBottom: 18,
+    alignSelf: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 30,
-    textAlign: 'center',
-    color: '#2c3e50',
+    color: '#2196F3',
+    letterSpacing: 0.5,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 18,
+    elevation: 3,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2d3436',
+    marginBottom: 6,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 25,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    elevation: 2,
+    marginBottom: 18,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    minHeight: 48,
   },
   currencyFlag: {
     fontSize: 22,
@@ -163,44 +209,62 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    height: 50,
+    height: 48,
     fontSize: 18,
     color: '#2c3e50',
+    backgroundColor: 'transparent',
   },
   pickerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 25,
+    marginBottom: 8,
+    marginTop: 4,
   },
   pickerWrapper: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: '#e3eaf4',
+    overflow: 'hidden',
   },
   pickerLabel: {
-    fontSize: 16,
-    marginBottom: 5,
+    fontSize: 15,
     color: '#7f8c8d',
     paddingLeft: 10,
+    marginTop: 4,
   },
   picker: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    elevation: 2,
+    width: '100%',
+    color: '#2c3e50',
+    backgroundColor: 'transparent',
+    minHeight: 44,
   },
   swapButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#2196F3',
     padding: 10,
     borderRadius: 8,
-    marginHorizontal: 10,
-  },
-  resultContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
+    marginHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
     elevation: 2,
+  },
+  resultCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 22,
+    elevation: 3,
+    shadowColor: '#2196F3',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 3,
+    alignItems: 'center',
+    marginTop: 10,
   },
   conversionRate: {
     fontSize: 16,
-    color: '#7f8c8d',
+    color: '#2196F3',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -209,13 +273,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#2c3e50',
     marginBottom: 5,
+    fontWeight: '500'
   },
   resultAmount: {
     fontSize: 32,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#27ae60',
+    color: '#4CAF50',
+    marginTop: 2,
   },
+  hideKeyboardButton: {
+    alignSelf: 'flex-end',
+    marginTop: 6,
+    marginBottom: 10,
+    backgroundColor: '#2196F3',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+  },
+  hideKeyboardText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  
 });
 
 export default CurrencyConverterScreen;

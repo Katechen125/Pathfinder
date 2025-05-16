@@ -9,6 +9,7 @@ import { RootStackParamList, Place, MapRegion } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import debounce from 'lodash.debounce';
+import { logoutUser } from '../Services/storage';
 
 
 interface Props {
@@ -125,16 +126,24 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
       }
     },
     {
-      label: 'Activities',
-      icon: 'ticket',
+      label: 'Booking',
+      icon: 'suitcase',
       onPress: () => {
         setMenuVisible(false);
-        if (places.length > 0) {
-          // Use the first place's location as default
-          navigation.navigate('Activities', { location: places[0].location });
-        } else {
-          Alert.alert('No places found', 'Please search for a destination first.');
-        }
+        navigation.navigate('Booking', {
+          destination: searchQuery,
+          coordinates: region
+            ? { lat: region.latitude, lng: region.longitude }
+            : undefined,
+        });
+      }
+    },
+    {
+      label: 'Budget',
+      icon: 'money',
+      onPress: () => {
+        setMenuVisible(false);
+        navigation.navigate('Budget');
       }
     },
     {
@@ -154,27 +163,18 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
       }
     },
     {
-      label: 'Travel Expense Tracker',
-      icon: 'money',
-      onPress: () => {
+      label: 'Log Out',
+      icon: 'sign-out',
+      onPress: async () => {
         setMenuVisible(false);
-        navigation.navigate('ExpenseTracker');
+        await logoutUser();
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Login' }], 
+        });
       }
-    },
-    {
-      label: 'Currency Converter',
-      icon: 'exchange',
-      onPress: () => {
-        setMenuVisible(false);
-        navigation.navigate('CurrencyConverter');
-      }
-    },
+    }
   ];
-
-  const saveToPlan = (place: Place) => {
-    setSavedPlans(prev => [...prev, { ...place, saved: true }]);
-    Alert.alert('Saved', `${place.name} added to itinerary!`);
-  };
 
   return (
     <View style={styles.container}>
@@ -230,40 +230,11 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
                   <Icon name="image" size={50} color="#ccc" />
                 </View>
               )}
-
               <Text style={styles.placeName}>{place.name}</Text>
-              <Text style={styles.placeAddress}>{place.address}</Text>
-
-              <View style={styles.buttonRow}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.saveButton]}
-                  onPress={() => saveToPlan(place)}
-                >
-                  <Icon name="bookmark" size={18} color="white" />
-                  <Text style={styles.buttonText}> Save</Text>
-                </TouchableOpacity>
-
-                <View style={styles.iconRow}>
-                  <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => navigation.navigate('Flights', {
-                      origin: 'Current Location',
-                      destination: place.name,
-                      date: new Date().toISOString().split('T')[0]
-                    })}
-                  >
-                    <Icon name="plane" size={20} color="#9C27B0" />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.iconButton}
-                    onPress={() => navigation.navigate('Hotels', {
-                      location: place.location
-                    })}
-                  >
-                    <Icon name="hotel" size={20} color="#2196F3" />
-                  </TouchableOpacity>
-                </View>
+              <View style={styles.addressRow}>
+                <Text style={styles.placeAddress} numberOfLines={1} ellipsizeMode="tail">
+                  {place.address}
+                </Text>
               </View>
             </View>
           ))}
@@ -302,27 +273,6 @@ const styles = StyleSheet.create({
     padding: 15,
     paddingTop: 10,
   },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 25,
-  },
-  mapButton: {
-    backgroundColor: '#795548',
-  },
-  savedPlansButton: {
-    backgroundColor: '#607D8B',
-  },
-  saveButton: {
-    backgroundColor: '#4CAF50',
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: '600',
-    marginLeft: 5,
-  },
   scrollContainer: {
     paddingHorizontal: 15,
     paddingBottom: 20,
@@ -348,22 +298,6 @@ const styles = StyleSheet.create({
   placeAddress: {
     fontSize: 14,
     color: '#666',
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingBottom: 15,
-  },
-  iconRow: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  iconButton: {
-    padding: 8,
   },
   imageFallback: {
     width: '100%',
@@ -372,7 +306,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f0f0'
   },
-
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -422,6 +355,13 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
     color: '#333',
+  },
+  addressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingBottom: 15,
   },
 
 });
