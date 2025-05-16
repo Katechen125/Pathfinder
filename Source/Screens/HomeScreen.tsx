@@ -69,8 +69,6 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
-  // Memoized debounced search function
-
   const debouncedSearch = useCallback(
     debounce((query: string) => {
       loadData(query);
@@ -88,16 +86,12 @@ const PlacesScreen: React.FC<Props> = ({ route }) => {
     });
   }, [navigation]);
 
-
-
-  // Handle initial load and subsequent searches
   useEffect(() => {
     if (searchQuery.trim()) {
       debouncedSearch(searchQuery);
     }
   }, [searchQuery, debouncedSearch]);
 
-  // Clear pending debounces on unmount
   useEffect(() => {
     return () => {
       debouncedSearch.cancel();

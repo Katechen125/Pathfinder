@@ -7,6 +7,13 @@ export interface SavedItem {
   date: string;
 }
 
+export interface CustomEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string; // YYYY-MM-DD
+}
+
 // User Management
 const USER_KEY = '@current_user';
 const getItineraryKey = (username: string) => `@itinerary_${username}`;
@@ -80,4 +87,39 @@ export const saveExpenses = async (username: string, expenses: any) => {
 export const loadExpenses = async (username: string) => {
   const data = await AsyncStorage.getItem(getExpenseKey(username));
   return data ? JSON.parse(data) : { expenses: [], limit: '' };
+};
+
+//calendar managment 
+const getCustomEventsKey = (username: string) => `@custom_events_${username}`;
+
+export const loadCustomEvents = async (username: string): Promise<CustomEvent[]> => {
+  try {
+    const data = await AsyncStorage.getItem(getCustomEventsKey(username));
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error loading custom events:', error);
+    return [];
+  }
+};
+
+export const saveCustomEvents = async (username: string, events: CustomEvent[]) => {
+  try {
+    await AsyncStorage.setItem(getCustomEventsKey(username), JSON.stringify(events));
+  } catch (error) {
+    console.error('Error saving custom events:', error);
+    throw error;
+  }
+};
+
+export const addCustomEvent = async (event: CustomEvent) => {
+  const username = await getCurrentUser();
+  if (!username) throw new Error('Not logged in');
+  const current = await loadCustomEvents(username);
+  await saveCustomEvents(username, [...current, event]);
+};
+
+export const deleteCustomEvent = async (username: string, id: string) => {
+  const current = await loadCustomEvents(username);
+  const updated = current.filter(event => event.id !== id);
+  await saveCustomEvents(username, updated);
 };

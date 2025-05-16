@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput, Modal, FlatList } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import * as AddCalendarEvent from 'react-native-add-calendar-event';
+import { SavedItem, loadItinerary, getCurrentUser, CustomEvent, loadCustomEvents, addCustomEvent, deleteCustomEvent, deleteFromItinerary } from '../Services/storage';
+import uuid from 'react-native-uuid';
+import { useIsFocused } from '@react-navigation/native';
 
 const CalendarScreen = () => {
   const [selectedDates, setSelectedDates] = useState({});
@@ -10,31 +12,90 @@ const CalendarScreen = () => {
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDescription, setEventDescription] = useState('');
+  const [bookings, setBookings] = useState<SavedItem[]>([]);
+  const [customEvents, setCustomEvents] = useState<CustomEvent[]>([]);
+  const [username, setUsername] = useState<string | null>(null);
 
-  const addEventToCalendar = () => {
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      loadData();
+    }
+  }, [isFocused]);
+
+  const loadData = async () => {
+    const user = await getCurrentUser();
+    if (!user) {
+      Alert.alert('Login Required', 'Please log in to view your calendar');
+      return;
+    }
+    setUsername(user);
+    const itinerary = await loadItinerary(user);
+    const customEvts = await loadCustomEvents(user);
+    setBookings(itinerary);
+    setCustomEvents(customEvts);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const getMarkedDates = () => {
+    const marks: any = {};
+    [...bookings, ...customEvents].forEach(item => {
+      const date = item.date;
+      marks[date] = marks[date] || { marked: true, dots: [{ color: '#2196F3' }] };
+    });
+    if (selectedDate) {
+      marks[selectedDate] = { ...(marks[selectedDate] || {}), selected: true, selectedColor: '#2196F3' };
+    }
+    return marks;
+  };
+
+  const eventsForSelectedDate = [
+    ...bookings.filter(item => item.date === selectedDate),
+    ...customEvents.filter(item => item.date === selectedDate)
+  ];
+
+  const handleAddCustomEvent = async () => {
     if (!selectedDate) {
       Alert.alert('Error', 'Please select a date first');
       return;
     }
-
-    const eventConfig = {
-      title: eventTitle || 'Travel Event',
-      startDate: `${selectedDate}T10:00:00.000Z`,
-      endDate: `${selectedDate}T11:00:00.000Z`,
-      notes: eventDescription || 'Added from Pathfinder App'
-    };
-
-    AddCalendarEvent.presentEventCreatingDialog(eventConfig)
-      .then((eventInfo) => {
-        if (eventInfo.action === 'SAVED') {
-          Alert.alert('Success', 'Event added to calendar');
-        }
-        setShowAddEvent(false);
-      })
-      .catch(error => {
-        console.log('Error creating event:', error);
-        Alert.alert('Error', 'Failed to add event to calendar');
+    if (!eventTitle.trim()) {
+      Alert.alert('Error', 'Event title is required');
+      return;
+    }
+    try {
+      await addCustomEvent({
+        id: uuid.v4().toString(),
+        title: eventTitle,
+        description: eventDescription,
+        date: selectedDate,
       });
+      setEventTitle('');
+      setEventDescription('');
+      setShowAddEvent(false);
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add event');
+    }
+  };
+
+  const handleDelete = async (id: string, isCustomEvent: boolean) => {
+    if (!username) return;
+
+    try {
+      if (isCustomEvent) {
+        await deleteCustomEvent(username, id);
+      } else {
+        await deleteFromItinerary(username, id);
+      }
+      loadData();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to delete item');
+    }
   };
 
   return (
@@ -46,7 +107,7 @@ const CalendarScreen = () => {
 
       <View style={styles.calendarCard}>
         <Calendar
-          markedDates={selectedDates}
+          markedDates={getMarkedDates()}
           onDayPress={(day) => {
             setSelectedDate(day.dateString);
             setSelectedDates({ [day.dateString]: { selected: true, selectedColor: '#2196F3' } });
@@ -73,6 +134,49 @@ const CalendarScreen = () => {
         />
       </View>
 
+      <View style={styles.eventsSection}>
+        <Text style={styles.eventsTitle}>
+          <Icon name="calendar-check-o" size={18} color="#2196F3" /> Events for {selectedDate || '...'}
+        </Text>
+        <FlatList
+          data={eventsForSelectedDate}
+          keyExtractor={item => item.id}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>No events for this date.</Text>
+          }
+          renderItem={({ item }) => {
+            const isCustom = !('type' in item);
+
+            return (
+              <View style={styles.eventCard}>
+                <View style={styles.eventContent}>
+                  {!isCustom ? (
+                    <>
+                      <Text style={styles.eventTitle}>
+                        {item.type.toUpperCase()}: {item.data.name || item.data.airline}
+                      </Text>
+                      <Text style={styles.eventDesc}>{item.data.description || ''}</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.eventTitle}>Custom: {item.title}</Text>
+                      <Text style={styles.eventDesc}>{item.description}</Text>
+                    </>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.deleteIcon}
+                  onPress={() => handleDelete(item.id, isCustom)}
+                >
+                  <Icon name="trash-o" size={18} color="#f44336" />
+                </TouchableOpacity>
+              </View>
+            );
+          }}
+        />
+      </View>
+
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
@@ -95,9 +199,9 @@ const CalendarScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>
-              <Icon name="calendar-plus-o" size={20} color="#2196F3" /> New Event
+              <Icon name="calendar-plus-o" size={20} color="#2196F3" /> New Custom Event
             </Text>
-            
+
             <View style={styles.dateBadge}>
               <Icon name="calendar-check-o" size={16} color="#4CAF50" />
               <Text style={styles.dateText}>{selectedDate}</Text>
@@ -137,7 +241,7 @@ const CalendarScreen = () => {
 
               <TouchableOpacity
                 style={[styles.button, styles.saveButton]}
-                onPress={addEventToCalendar}
+                onPress={handleAddCustomEvent}
               >
                 <Icon name="check" size={16} color="white" />
                 <Text style={styles.buttonText}>Add Event</Text>
@@ -148,7 +252,7 @@ const CalendarScreen = () => {
       </Modal>
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -179,6 +283,25 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4
+  },
+  eventsSection: {
+    marginTop: 20,
+    flex: 1
+  },
+  eventsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2196F3',
+    marginBottom: 10
+  },
+  eventTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333'
+  },
+  eventDesc: {
+    color: '#555',
+    marginTop: 4
   },
   addButton: {
     position: 'absolute',
@@ -280,8 +403,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
     fontSize: 16
-  }
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 20
+  },
+  eventCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  eventContent: {
+    flex: 1
+  },
+  deleteIcon: {
+    padding: 8,
+    marginLeft: 10
+  },
 });
 
 export default CalendarScreen;
+
 
