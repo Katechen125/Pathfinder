@@ -23,7 +23,7 @@ const DEFAULT_REGION: MapRegion = {
   longitudeDelta: 0.0421
 };
 
-const PlacesScreen: React.FC<Props> = ({ route }) => {
+const HomeScreen: React.FC<Props> = ({ route }) => {
   const initialDestination = route.params?.destination || 'Paris';
   const [searchQuery, setSearchQuery] = useState(initialDestination);
   const [places, setPlaces] = useState<Place[]>([]);
@@ -360,4 +360,4 @@ const styles = StyleSheet.create({
 
 });
 
-export default PlacesScreen;
+export default HomeScreen;

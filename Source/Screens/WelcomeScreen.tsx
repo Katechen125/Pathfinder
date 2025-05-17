@@ -16,28 +16,51 @@ const containsBadWords = (text: string) => {
   return BAD_WORDS.some(word => lower.includes(word));
 };
 
+type LocationSuggestion = {
+  id: string;
+  name: string;
+};
 
-const HomeScreen: React.FC = () => {
+
+const WelcomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState<{ id: string, name: string }[]>([]);
   const [showWarning, setShowWarning] = useState(false);
   const [showNotFound, setShowNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuggestionSelected, setIsSuggestionSelected] = useState(false);
+  const [lastSuggestions, setLastSuggestions] = useState<LocationSuggestion[]>([]);
 
   useEffect(() => {
     let isActive = true;
+
+    if (isSuggestionSelected) {
+      setIsSuggestionSelected(false);
+      return;
+    }
+
     if (searchTerm.length < 2 || containsBadWords(searchTerm)) {
       setSuggestions([]);
       setShowNotFound(false);
       setShowWarning(containsBadWords(searchTerm));
       return;
     }
+
+    const exactMatch = suggestions.some(s => s.name === searchTerm);
+
+    if (exactMatch) return;
+
     setIsLoading(true);
     searchLocations(searchTerm)
       .then(res => {
         if (isActive) {
-          setSuggestions(res);
+
+          const uniqueResults = res.filter((item: LocationSuggestion, index: number, self: LocationSuggestion[]) =>
+            self.findIndex((s: LocationSuggestion) => s.id === item.id) === index
+          );
+          setSuggestions(uniqueResults);
+          setLastSuggestions(uniqueResults);
           setShowNotFound(false);
         }
       })
@@ -58,23 +81,29 @@ const HomeScreen: React.FC = () => {
     }
     setShowWarning(false);
 
-    const match = suggestions.find(s => s.name.toLowerCase() === searchTerm.trim().toLowerCase());
-    if (!match) {
+    const cleanSearchTerm = searchTerm.trim().toLowerCase();
+
+    const matchFound = lastSuggestions.some(suggestion => {
+      const cleanSuggestion = suggestion.name.toLowerCase();
+      return cleanSearchTerm.includes(cleanSuggestion) ||
+        cleanSuggestion.includes(cleanSearchTerm);
+    });
+
+    if (!matchFound && cleanSearchTerm !== '') {
       setShowNotFound(true);
       return;
     }
-    setShowNotFound(false);
 
+    setShowNotFound(false);
     navigation.navigate('Home', { destination: searchTerm });
   };
-
   const handleSuggestionPress = (place: string) => {
     setSearchTerm(place);
+    setSuggestions([]);
     setShowWarning(false);
     setShowNotFound(false);
-    setSuggestions([]);
+    setIsSuggestionSelected(true);
   };
-
 
   return (
     <ImageBackground
@@ -105,7 +134,7 @@ const HomeScreen: React.FC = () => {
             <FlatList
               keyboardShouldPersistTaps="handled"
               data={suggestions}
-              keyExtractor={item => item.id}
+              keyExtractor={item => item.id.toString()}
               renderItem={({ item }) => (
                 <TouchableOpacity onPress={() => handleSuggestionPress(item.name)} style={styles.suggestionItem}>
                   <Text style={styles.suggestionText}>{item.name}</Text>
@@ -193,17 +222,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee'
   },
-  suggestionText: {
-    paddingHorizontal: 15,
-    fontSize: 16,
-    color: '#2196F3',
-  },
   warningText: {
-    color: '#f44336',
+    color: '#FF9800',
     marginBottom: 10,
     fontSize: 15,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  suggestionText: {
+    paddingHorizontal: 15,
+    fontSize: 16,
+    color: 'black',
   },
   searchButton: {
     backgroundColor: '#FF9800',
@@ -219,4 +248,4 @@ const styles = StyleSheet.create({
   }
 });
 
-export default HomeScreen;
+export default WelcomeScreen;
