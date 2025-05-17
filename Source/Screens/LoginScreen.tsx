@@ -58,7 +58,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                         'Invalid Password',
                         'Please meet all password requirements'
                     );
-                    return; 
+                    return;
                 }
 
                 await registerUser(username, password);
@@ -91,6 +91,15 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                     value={password}
                     onChangeText={setPassword}
                 />
+                {password.length > 0 && (
+                    <TouchableOpacity
+                        style={styles.clearIcon}
+                        onPress={() => setPassword('')}
+                        accessibilityLabel="Clear password"
+                    >
+                        <Icon name="times-circle" size={20} color="#888" />
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity
                     style={styles.eyeIcon}
                     onPress={() => setShowPassword(prev => !prev)}
@@ -236,7 +245,13 @@ const styles = StyleSheet.create({
         marginLeft: 8,
         color: '#444',
         fontSize: 14,
-    }
+    },
+    clearIcon: {
+        position: 'absolute',
+        right: 44, 
+        padding: 8,
+        zIndex: 2,
+      },
 });
 
 export default LoginScreen;
