@@ -29,27 +29,80 @@ export const MOCK_PLACES = [
   }
 ];
 
-const MOCK_VISA_REQUIREMENTS: { [key: string]: string } = { //revise the screen and the options that are offer
-  // North America
-  'United_States-Mexico': 'No visa required for tourism (180 days)',
-  'Canada-Mexico': 'No visa required (180 days)',
-  
-  // Europe
-  'German-Mexico': 'No visa required (90 days)',
-  'French-Mexico': 'No visa required (90 days)',
-  'Italian-Mexico': 'No visa required (90 days)',
-  
-  // Asia
+const MOCK_VISA_REQUIREMENTS: { [key: string]: string } = {
+  // NORTH AMERICA
+  'United_States-Mexico': 'No visa required (180 days)',
+  'Canadian-Mexico': 'No visa required (180 days)',
+  'United_States-France': 'Visa-free (90/180 days)',
+  'Canadian-France': 'Visa-free (90/180 days)',
+  'Mexican-France': 'Schengen visa required',
+
+  // EUROPE
+  'German-Mexico': 'No visa required (180 days)',
+  'French-Mexico': 'No visa required (180 days)',
+  'Italian-Mexico': 'No visa required (180 days)',
+  'British-Mexico': 'No visa required (180 days)',
+  'Spanish-Mexico': 'No visa required (180 days)',
+
+  'German-France': 'Visa-free (EU citizen)',
+  'British-France': 'Visa-free (90/180 days)',
+  'American-France': 'Visa-free (90/180 days)',
+  'Chinese-France': 'Schengen visa required',
+
+  // ASIA
   'Japanese-Mexico': 'No visa required (180 days)',
   'South_Korean-Mexico': 'No visa required (180 days)',
   'Chinese-Mexico': 'FMM Tourist Card required on arrival',
-  
-  // Additional countries
+  'Indian-Mexico': 'eVisa available',
+
+  'Japanese-United_States': 'Visa Waiver Program (ESTA)',
+  'South_Korean-United_States': 'Visa Waiver Program (ESTA)',
+  'Chinese-United_States': 'B1/B2 Visa required',
+
+  // OCEANIA
+  'Australian-Mexico': 'No visa required (180 days)',
+  'Australian-United_States': 'Visa Waiver Program (ESTA)',
+  'Australian-France': 'Visa-free (90/180 days)',
+
+  // SOUTH AMERICA
   'Brazilian-Mexico': 'No visa required (180 days)',
   'Argentine-Mexico': 'No visa required (90 days)',
-  'Australian-Mexico': 'No visa required (180 days)',
-  
-  'default': 'This visa requierement is not supported in this version yet. Contact offical embassy or consulate'
+  'Brazilian-United_States': 'B1/B2 Visa required',
+  'Argentine-United_States': 'B1/B2 Visa required',
+
+  // MIDDLE EAST
+  'Saudi-United_States': 'B1/B2 Visa required',
+  'Turkish-United_States': 'B1/B2 Visa required',
+  'Saudi-France': 'Schengen visa required',
+
+  // AFRICA
+  'South_African-Mexico': 'No visa required (180 days)',
+  'South_African-United_States': 'B1/B2 Visa required',
+
+  // COMMON VISA-FREE ZONES
+  'French-Germany': 'Visa-free (EU citizen)',
+  'Italian-Spain': 'Visa-free (EU citizen)',
+
+  // VISA WAIVER PROGRAM COUNTRIES
+  'British-United_States': 'ESTA required',
+  'French-United_States': 'ESTA required',
+  'German-United_States': 'ESTA required',
+  'Italian-United_States': 'ESTA required',
+  'Spanish-United_States': 'ESTA required',
+
+  // COMMON VISA-REQUIRED
+  'Indian-France': 'Schengen visa required',
+  'Chinese-Germany': 'Schengen visa required',
+  'Russian-United_States': 'B1/B2 Visa required',
+  'Indonesian-France': 'Schengen visa required',
+
+  // SPECIAL CASES
+  'American-Canada': 'Visa-free (6 months)',
+  'Canadian-United_States': 'Visa-free (6 months)',
+  'Mexican-Canada': 'eVisa required',
+  'Brazilian-France': 'Visa-free (90/180 days)',
+
+  'default': 'Visa requirements not supported in this version. Contact embassy.'
 };
 
 export const MOCK_HOTELS = [
@@ -58,9 +111,11 @@ export const MOCK_HOTELS = [
     name: 'Luxury Resort',
     price: 200,
     rating: 4.5,
-    address: 'Beachfront Avenue'
+    address: 'Beachfront Avenue',
+    location: { lat: 19.4326, lng: -99.1332 }
   },
-]
+];
+
 
 export const MOCK_ACTIVITIES = [
   {
@@ -68,14 +123,16 @@ export const MOCK_ACTIVITIES = [
     name: 'Guided City Tour',
     address: 'Main Square',
     rating: 4.8,
-    category: 'Tour'
+    category: 'Tour',
+    description: 'Explore the city with a local guide',
+    location: { lat: 19.4326, lng: -99.1332 }
   }
 ];
 
 const mockGeocode = (address: string) => {
   console.log('Using mock geocoding');
-  return address.toLowerCase().includes('mexico') ? 
-    { lat: 19.4326, lng: -99.1332 } : 
+  return address.toLowerCase().includes('mexico') ?
+    { lat: 19.4326, lng: -99.1332 } :
     { lat: 48.8566, lng: 2.3522 };
 };
 
@@ -83,7 +140,7 @@ const placeMapper = (place: any) => ({
   id: place.place_id,
   name: place.name,
   address: place.formatted_address,
-  photoReference: place.photos?.[0]?.photo_reference || undefined, 
+  photoReference: place.photos?.[0]?.photo_reference || undefined,
   location: place.geometry.location,
 });
 
@@ -92,7 +149,11 @@ const hotelMapper = (item: any) => ({
   name: item.properties.name,
   price: item.properties.price || Math.floor(Math.random() * 200) + 50,
   rating: item.properties.rank?.rating || 4,
-  address: item.properties.formatted
+  address: item.properties.formatted,
+  location: {
+    lat: item.properties.lat,
+    lng: item.properties.lon
+  }
 });
 
 const activityMapper = (item: any) => ({
@@ -100,28 +161,33 @@ const activityMapper = (item: any) => ({
   name: item.properties.name,
   address: item.properties.formatted,
   rating: item.properties.rank?.rating || 4,
-  category: item.properties.categories?.[0] || 'activity'
+  category: item.properties.categories?.[0] || 'activity',
+  description: item.properties.description,
+  location: {
+    lat: item.properties.lat,
+    lng: item.properties.lon
+  }
 });
 
 export const geocodeLocation = async (address: string) => {
   try {
     if (USE_MOCK_DATA) return mockGeocode(address);
-    
+
     const response = await axios.get(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_API_KEY}`,
       { timeout: 10000 }
     );
-    
+
     if (!response.data?.results?.[0]) {
       throw new Error('No results found');
     }
-    
+
     return {
       lat: response.data.results[0].geometry.location.lat,
       lng: response.data.results[0].geometry.location.lng,
       address: response.data.results[0].formatted_address
     };
-    
+
   } catch (error) {
     console.error('Geocoding error:', error);
     return {
@@ -134,11 +200,11 @@ export const geocodeLocation = async (address: string) => {
 export const fetchPlaces = async (query: string) => {
   try {
     if (USE_MOCK_DATA) return MOCK_PLACES;
-    
+
     const response = await axios.get(
       `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&key=${GOOGLE_API_KEY}`
     );
-    
+
     return response.data.results?.map(placeMapper) || MOCK_PLACES;
   } catch (error) {
     console.error('Places API error:', error);
@@ -162,7 +228,7 @@ export const searchLocations = async (query: string) => {
       { id: 'mock2', name: 'Cancun, Mexico' }
     ];
   }
-  
+
   const response = await axios.get(
     `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${query}&key=${GOOGLE_API_KEY}`
   );
@@ -191,18 +257,18 @@ export const searchFlights = async (origin: string, destination: string, date: s
 export const searchHotels = async (lat: number, lng: number) => {
   try {
     if (USE_MOCK_DATA) return MOCK_HOTELS;
-    
+
     const response = await axios.get(
       'https://api.geoapify.com/v2/places', {
-        params: {
-          categories: 'accommodation',
-          filter: `circle:${lng},${lat},5000`,
-          limit: 20,
-          apiKey: '5b0ee5455a234d0da7bd056f40cd7d63'
-        }
+      params: {
+        categories: 'accommodation',
+        filter: `circle:${lng},${lat},5000`,
+        limit: 20,
+        apiKey: '5b0ee5455a234d0da7bd056f40cd7d63'
       }
+    }
     );
-    
+
     return response.data.features.map(hotelMapper);
   } catch (error) {
     console.error('Hotels error:', error);
@@ -213,16 +279,16 @@ export const searchHotels = async (lat: number, lng: number) => {
 export const searchActivities = async (lat: number, lng: number) => {
   try {
     if (USE_MOCK_DATA) return MOCK_ACTIVITIES;
-    
+
     const response = await axios.get(
       'https://api.geoapify.com/v2/places', {
-        params: {
-          categories: 'entertainment,tourism',
-          filter: `circle:${lng},${lat},5000`,
-          limit: 20,
-          apiKey: '5b0ee5455a234d0da7bd056f40cd7d63'
-        }
+      params: {
+        categories: 'entertainment,tourism',
+        filter: `circle:${lng},${lat},5000`,
+        limit: 20,
+        apiKey: '5b0ee5455a234d0da7bd056f40cd7d63'
       }
+    }
     );
 
     return response.data.features.map(activityMapper);
@@ -237,6 +303,6 @@ export const checkVisaRequirements = async (
   destination: string
 ) => {
   const key = `${nationality}-${destination.replace(/ /g, '_')}`;
-  
+
   return MOCK_VISA_REQUIREMENTS[key] || MOCK_VISA_REQUIREMENTS['default'];
 };

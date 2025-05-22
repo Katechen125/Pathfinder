@@ -48,7 +48,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 const success = await loginUser(username, password);
                 if (success) {
                     await setCurrentUser(username);
-                    navigation.navigate('Welcome');
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Welcome' }],
+                      });
+                      
                 } else {
                     Alert.alert('Error', 'Invalid credentials');
                 }
@@ -63,7 +67,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
                 await registerUser(username, password);
                 await setCurrentUser(username);
-                navigation.navigate('Welcome');
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'Welcome' }],
+                  });
+                  
             }
         } catch (error) {
             const err = error as Error;

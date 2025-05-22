@@ -19,6 +19,7 @@ import CurrencyConverterScreen from './Source/Screens/CurrencyConverterScreen';
 import BookingScreen from './Source/Screens/BookingScreen';
 import BudgetScreen from './Source/Screens/BudgetScreen';
 import LoginScreen from './Source/Screens/LoginScreen';
+import FeedbackScreen from './Source/Screens/FeedbackScreen';
 
 
 // Create a stack navigator for managing screen transitions
@@ -42,6 +43,7 @@ const App = () => {
         <Stack.Screen name="Booking" component={BookingScreen} />
         <Stack.Screen name="Budget" component={BudgetScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="Feedback" component={FeedbackScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

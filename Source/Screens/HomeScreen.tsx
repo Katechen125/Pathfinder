@@ -10,6 +10,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import debounce from 'lodash.debounce';
 import { logoutUser } from '../Services/storage';
+import { getPastSearches, deletePastSearch } from '../Services/storage';
 
 
 interface Props {
@@ -24,7 +25,7 @@ const DEFAULT_REGION: MapRegion = {
 };
 
 const HomeScreen: React.FC<Props> = ({ route }) => {
-  const initialDestination = route.params?.destination || 'Paris';
+  const initialDestination = route.params?.destination;
   const [searchQuery, setSearchQuery] = useState(initialDestination);
   const [places, setPlaces] = useState<Place[]>([]);
   const [savedPlans, setSavedPlans] = useState<Place[]>([]);
@@ -34,6 +35,24 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
   const [hotels, setHotels] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [pastSearches, setPastSearches] = useState<string[]>([]);
+  const [loadingSearches, setLoadingSearches] = useState(true);
+
+  useEffect(() => {
+    const fetchPastSearches = async () => {
+      setLoadingSearches(true);
+      const searches = await getPastSearches();
+      setPastSearches(searches.reverse());
+      setLoadingSearches(false);
+    };
+    fetchPastSearches();
+  }, []);
+
+  const handleDeleteSearch = async (term: string) => {
+    await deletePastSearch(term);
+    setPastSearches(prev => prev.filter(s => s !== term.toLowerCase()));
+  };
+
 
   const loadData = async (query: string) => {
     try {
@@ -105,7 +124,7 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
       onPress: () => {
         setMenuVisible(false);
         if (region) {
-          navigation.navigate('Map', { places, region });
+          navigation.navigate('Map', { places, region, hotels, activities });
         } else {
           Alert.alert('Error', 'No region data available. Please search for a destination first.');
         }
@@ -157,6 +176,14 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
       }
     },
     {
+      label: 'Feedback',
+      icon: 'comment',
+      onPress: () => {
+        setMenuVisible(false);
+        navigation.navigate('Feedback');
+      }
+    },
+    {
       label: 'Log Out',
       icon: 'sign-out',
       onPress: async () => {
@@ -164,14 +191,33 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         await logoutUser();
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Login' }], 
+          routes: [{ name: 'Login' }],
         });
       }
     }
   ];
-
   return (
     <View style={styles.container}>
+      <View style={styles.pastSearchesHeader}>
+        <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 8 }}>Past Searches</Text>
+        {loadingSearches ? (
+          <ActivityIndicator size="small" color="#2196F3" />
+        ) : pastSearches.length === 0 ? (
+          <Text style={{ color: '#888' }}>No past searches</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+            {pastSearches.map((term, idx) => (
+              <View key={term} style={styles.searchCard}>
+                <Text style={{ fontSize: 16 }}>{term}</Text>
+                <TouchableOpacity onPress={() => handleDeleteSearch(term)}>
+                  <Icon name="trash" size={18} color="#d32f2f" style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+      </View>
+
       <Modal
         visible={menuVisible}
         transparent
@@ -356,6 +402,26 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 15,
     paddingBottom: 15,
+  },
+  searchCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginRight: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  pastSearchesHeader: {
+    padding: 15,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
   },
 
 });

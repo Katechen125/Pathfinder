@@ -62,7 +62,7 @@ export const loadItinerary = async (username: string): Promise<SavedItem[]> => {
 export const addToItinerary = async (item: SavedItem) => {
   const username = await getCurrentUser();
   if (!username) throw new Error('Not logged in');
-  
+
   const current = await loadItinerary(username);
   if (!current.some(i => i.id === item.id && i.type === item.type)) {
     await saveItinerary(username, [...current, item]);
@@ -70,15 +70,15 @@ export const addToItinerary = async (item: SavedItem) => {
 };
 
 export const deleteFromItinerary = async (username: string, id: string) => {
-    if (!username) throw new Error('Not logged in');
-    
-    const currentItems = await loadItinerary(username);
-    const updatedItems = currentItems.filter(item => item.id !== id);
-    await saveItinerary(username, updatedItems);
-    return updatedItems;
-  };
+  if (!username) throw new Error('Not logged in');
 
-  const getExpenseKey = (username: string) => `@expenses_${username}`;
+  const currentItems = await loadItinerary(username);
+  const updatedItems = currentItems.filter(item => item.id !== id);
+  await saveItinerary(username, updatedItems);
+  return updatedItems;
+};
+
+const getExpenseKey = (username: string) => `@expenses_${username}`;
 
 export const saveExpenses = async (username: string, expenses: any) => {
   await AsyncStorage.setItem(getExpenseKey(username), JSON.stringify(expenses));
@@ -122,4 +122,41 @@ export const deleteCustomEvent = async (username: string, id: string) => {
   const current = await loadCustomEvents(username);
   const updated = current.filter(event => event.id !== id);
   await saveCustomEvents(username, updated);
+};
+
+//search history
+
+const getSearchHistoryKey = (username: string) => `@past_searches_${username}`;
+
+export const addPastSearch = async (searchTerm: string) => {
+  const username = await getCurrentUser();
+  if (!username) return;
+
+  const key = getSearchHistoryKey(username);
+  const currentSearches = await AsyncStorage.getItem(key);
+  const searches = currentSearches ? JSON.parse(currentSearches) : [];
+
+  if (!searches.includes(searchTerm.toLowerCase())) {
+    searches.push(searchTerm.toLowerCase());
+    await AsyncStorage.setItem(key, JSON.stringify(searches));
+  }
+};
+
+export const getPastSearches = async (): Promise<string[]> => {
+  const username = await getCurrentUser();
+  if (!username) return [];
+
+  const key = getSearchHistoryKey(username);
+  const data = await AsyncStorage.getItem(key);
+  return data ? JSON.parse(data) : [];
+};
+
+export const deletePastSearch = async (term: string) => {
+  const username = await getCurrentUser();
+  if (!username) return;
+  const key = getSearchHistoryKey(username);
+  const current = await AsyncStorage.getItem(key);
+  const searches = current ? JSON.parse(current) : [];
+  const updated = searches.filter((s: string) => s !== term.toLowerCase());
+  await AsyncStorage.setItem(key, JSON.stringify(updated));
 };

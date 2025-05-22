@@ -4,6 +4,8 @@ import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, A
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../Services/types';
 import { searchLocations } from '../Services/API';
+import { getPastSearches, addPastSearch } from '../Services/storage';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Welcome'>;
 
@@ -31,6 +33,33 @@ const WelcomeScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuggestionSelected, setIsSuggestionSelected] = useState(false);
   const [lastSuggestions, setLastSuggestions] = useState<LocationSuggestion[]>([]);
+  const [hasPastSearches, setHasPastSearches] = useState(false);
+
+  useEffect(() => {
+    const checkPastSearches = async () => {
+      const searches = await getPastSearches();
+      setHasPastSearches(searches.length > 0);
+    };
+
+    checkPastSearches();
+  }, []);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => hasPastSearches ? (
+        <TouchableOpacity
+          style={{ marginRight: 15 }}
+          onPress={() => navigation.reset({
+            index: 0,
+            routes: [{ name: 'Home' }],
+          })}
+        >
+          <Text style={{ color: '#2196F3', fontWeight: '600' }}>Skip</Text>
+        </TouchableOpacity>
+      ) : null,
+      headerLeft: () => null,
+    });
+  }, [hasPastSearches, navigation]);
 
   useEffect(() => {
     let isActive = true;
@@ -94,9 +123,11 @@ const WelcomeScreen: React.FC = () => {
       return;
     }
 
+    addPastSearch(searchTerm.trim());
     setShowNotFound(false);
     navigation.navigate('Home', { destination: searchTerm });
   };
+
   const handleSuggestionPress = (place: string) => {
     setSearchTerm(place);
     setSuggestions([]);
@@ -128,6 +159,15 @@ const WelcomeScreen: React.FC = () => {
             autoCapitalize="words"
           />
           {isLoading && <ActivityIndicator style={styles.loadingIcon} color="#2196F3" />}
+          {searchTerm.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearIcon}
+              onPress={() => setSearchTerm('')}
+              accessibilityLabel="Clear password"
+            >
+              <Icon name="times-circle" size={20} color="#888" />
+            </TouchableOpacity>
+          )}
         </View>
         {suggestions.length > 0 && (
           <View style={styles.suggestionBox}>
@@ -245,7 +285,13 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 16
-  }
+  },
+  clearIcon: {
+    position: 'absolute',
+    right: 44,
+    padding: 8,
+    zIndex: 2,
+  },
 });
 
 export default WelcomeScreen;

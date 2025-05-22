@@ -1,10 +1,13 @@
 export type RootStackParamList = {
   Welcome: undefined;
   Home: { destination: string };
-  Map: { places: Place[];
+  Map: {
+    places: Place[];
+    hotels?: Hotel[];
+    activities?: Activity[];
     region?: MapRegion;
-   };
-  Flights: { 
+  };
+  Flights: {
     origin: string;
     destination: string;
     date: string;
@@ -18,8 +21,9 @@ export type RootStackParamList = {
   ExpenseTracker: undefined;
   Booking: { destination: string; coordinates?: Coordinates };
   Budget: undefined;
-  Login: undefined;   
+  Login: undefined;
   BookingWebsite: undefined;
+  Feedback: undefined;
 };
 
 export interface Place {
@@ -37,7 +41,8 @@ export interface Hotel {
   price: string;
   rating: number;
   address: string;
-  image?: string; 
+  image?: string;
+  location?: Coordinates;
 }
 
 export interface Activity {
@@ -45,7 +50,10 @@ export interface Activity {
   name: string;
   category: string;
   rating: number;
-  image?: string; 
+  image?: string;
+  location?: Coordinates;
+  address?: string;
+  description?: string;
 }
 
 export interface Flight {
@@ -54,7 +62,7 @@ export interface Flight {
   price: number;
   departureDate: string;
   flightNumber: string;
-  image?: string; 
+  image?: string;
 }
 
 export interface Location {
@@ -85,8 +93,8 @@ export interface Expense {
 export type SavedItemType = 'place' | 'hotel' | 'activity' | 'flight';
 
 export interface SavedItem {
-  id: string;            
-  type: SavedItemType;   
-  data: Place | Hotel | Activity | Flight; 
+  id: string;
+  type: SavedItemType;
+  data: Place | Hotel | Activity | Flight;
   date?: string;
 }
