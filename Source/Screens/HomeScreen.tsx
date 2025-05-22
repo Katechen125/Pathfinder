@@ -1,9 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Pressable } from 'react-native';
-import {
-  fetchPlaces, getPhotoUrl, geocodeLocation, searchHotels, searchActivities, MOCK_PLACES,
-  MOCK_HOTELS, MOCK_ACTIVITIES
-} from '../Services/API';
+import { fetchPlaces, getPhotoUrl, geocodeLocation, fetchNearbyPlaces } from '../Services/API';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, Place, MapRegion } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -37,6 +34,8 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const [pastSearches, setPastSearches] = useState<string[]>([]);
   const [loadingSearches, setLoadingSearches] = useState(true);
+  const [showPastSearches, setShowPastSearches] = useState(false);
+  const [warning, setWarning] = useState('');
 
   useEffect(() => {
     const fetchPastSearches = async () => {
@@ -56,33 +55,28 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
 
   const loadData = async (query: string) => {
     try {
+      setWarning('');
       setLoading(true);
       const coords = await geocodeLocation(query);
-
-      if (coords) {
-        const [placesData, hotelsData, activitiesData] = await Promise.all([
-          fetchPlaces(query),
-          searchHotels(coords.lat, coords.lng),
-          searchActivities(coords.lat, coords.lng)
-        ]);
-
-        setPlaces(placesData);
-        setHotels(hotelsData);
-        setActivities(activitiesData);
-
-        setRegion({
-          latitude: coords.lat,
-          longitude: coords.lng,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        });
+      if (!coords) {
+        setWarning('No location found for your search.');
+        setPlaces([]);
+        return;
+      }
+      const [textPlaces, nearbyPlaces] = await Promise.all([
+        fetchPlaces(query),
+        fetchNearbyPlaces(coords.lat, coords.lng)
+      ]);
+      const combined = [...textPlaces, ...nearbyPlaces].filter(
+        (place, index, self) => self.findIndex(p => p.id === place.id) === index
+      );
+      setPlaces(combined);
+      if (combined.length === 0) {
+        setWarning('No places found. Try another search.');
       }
     } catch (error) {
-      Alert.alert('Info', 'Using demo data');
-      setPlaces(MOCK_PLACES as Place[]);
-      setHotels(MOCK_HOTELS);
-      setActivities(MOCK_ACTIVITIES);
-      setRegion(DEFAULT_REGION);
+      setWarning('Could not load results. Please try again.');
+      setPlaces([]);
     } finally {
       setLoading(false);
     }
@@ -199,25 +193,37 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
   return (
     <View style={styles.container}>
       <View style={styles.pastSearchesHeader}>
-        <Text style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 8 }}>Past Searches</Text>
-        {loadingSearches ? (
-          <ActivityIndicator size="small" color="#2196F3" />
-        ) : pastSearches.length === 0 ? (
-          <Text style={{ color: '#888' }}>No past searches</Text>
-        ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-            {pastSearches.map((term, idx) => (
-              <View key={term} style={styles.searchCard}>
-                <Text style={{ fontSize: 16 }}>{term}</Text>
-                <TouchableOpacity onPress={() => handleDeleteSearch(term)}>
-                  <Icon name="trash" size={18} color="#d32f2f" style={{ marginLeft: 8 }} />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </ScrollView>
+        <TouchableOpacity
+          style={styles.pastSearchesToggle}
+          onPress={() => setShowPastSearches(v => !v)}
+        >
+          <Text style={styles.pastSearchesTitle}>Past Searches</Text>
+          <Icon
+            name={showPastSearches ? 'chevron-up' : 'chevron-down'}
+            size={18}
+            color="#2196F3"
+            style={{ marginLeft: 8 }}
+          />
+        </TouchableOpacity>
+        {showPastSearches && (
+          loadingSearches ? (
+            <ActivityIndicator size="small" color="#2196F3" />
+          ) : pastSearches.length === 0 ? (
+            <Text style={{ color: '#888', marginTop: 8 }}>No past searches</Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+              {pastSearches.map((term, idx) => (
+                <View key={term} style={styles.searchCard}>
+                  <Text style={{ fontSize: 16 }}>{term}</Text>
+                  <TouchableOpacity onPress={() => handleDeleteSearch(term)}>
+                    <Icon name="trash" size={18} color="#d32f2f" style={{ marginLeft: 8 }} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )
         )}
       </View>
-
       <Modal
         visible={menuVisible}
         transparent
@@ -249,6 +255,10 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
           autoCapitalize="words"
         />
       </View>
+
+      {warning !== '' && (
+        <Text style={styles.warningText}>{warning}</Text>
+      )}
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -423,6 +433,22 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
+  pastSearchesToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pastSearchesTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    color: '#2196F3',
+  },
+  warningText: {
+    color: '#FF9800',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginVertical: 8,
+  }
 
 });
 

@@ -238,6 +238,17 @@ export const searchLocations = async (query: string) => {
   }));
 };
 
+export const fetchNearbyPlaces = async (lat: number, lng: number, radius = 50000) => {
+  try {
+    const response = await axios.get(
+      `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=${radius}&key=${GOOGLE_API_KEY}`
+    );
+    return response.data.results.map(placeMapper);
+  } catch (error) {
+    console.error('Nearby Places API error:', error);
+    return [];
+  }
+};
 
 export const searchFlights = async (origin: string, destination: string, date: string) => {
   try {

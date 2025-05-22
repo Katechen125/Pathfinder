@@ -95,7 +95,6 @@ const MapScreen: React.FC<MapScreenProps> = ({ route }) => {
             </Marker>
           ) : null
         )}
-        ∫
       </MapView>
     </View>
   );
