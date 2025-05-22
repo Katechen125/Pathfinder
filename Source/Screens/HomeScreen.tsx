@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Pressable } from 'react-native';
-import { fetchPlaces, getPhotoUrl, geocodeLocation, fetchNearbyPlaces } from '../Services/API';
+import { fetchPlaces, getPhotoUrl, geocodeLocation, fetchNearbyPlaces, searchActivities,searchHotels } from '../Services/API';
 import { RouteProp, useNavigation } from '@react-navigation/native';
-import { RootStackParamList, Place, MapRegion } from '../Services/types';
+import { RootStackParamList, Place, MapRegion, Coordinates } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import debounce from 'lodash.debounce';
@@ -35,7 +35,9 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
   const [pastSearches, setPastSearches] = useState<string[]>([]);
   const [loadingSearches, setLoadingSearches] = useState(true);
   const [showPastSearches, setShowPastSearches] = useState(false);
+  const [coordinates, setCoordinates] = useState<Coordinates | undefined>();
   const [warning, setWarning] = useState('');
+  const DEFAULT_DELTA = 0.0922;
 
   useEffect(() => {
     const fetchPastSearches = async () => {
@@ -58,30 +60,53 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
       setWarning('');
       setLoading(true);
       const coords = await geocodeLocation(query);
+
       if (!coords) {
         setWarning('No location found for your search.');
+        setRegion(undefined);
+        setCoordinates(undefined);
         setPlaces([]);
         return;
       }
+
+      setCoordinates({ lat: coords.lat, lng: coords.lng });
+      setRegion({
+        latitude: coords.lat,
+        longitude: coords.lng,
+        latitudeDelta: DEFAULT_DELTA,
+        longitudeDelta: DEFAULT_DELTA,
+      });
+
+
       const [textPlaces, nearbyPlaces] = await Promise.all([
         fetchPlaces(query),
         fetchNearbyPlaces(coords.lat, coords.lng)
       ]);
+
       const combined = [...textPlaces, ...nearbyPlaces].filter(
         (place, index, self) => self.findIndex(p => p.id === place.id) === index
       );
       setPlaces(combined);
+
       if (combined.length === 0) {
         setWarning('No places found. Try another search.');
       }
     } catch (error) {
       setWarning('Could not load results. Please try again.');
       setPlaces([]);
+      setCoordinates(undefined);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (region) {
+      searchHotels(region.latitude, region.longitude).then(setHotels);
+      searchActivities(region.latitude, region.longitude).then(setActivities);
+    }
+
+  }, [region]);
   const debouncedSearch = useCallback(
     debounce((query: string) => {
       loadData(query);
@@ -118,7 +143,7 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
       onPress: () => {
         setMenuVisible(false);
         if (region) {
-          navigation.navigate('Map', { places, region, hotels, activities });
+          navigation.navigate('Map', { places, hotels, activities, region });
         } else {
           Alert.alert('Error', 'No region data available. Please search for a destination first.');
         }
@@ -139,9 +164,7 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         setMenuVisible(false);
         navigation.navigate('Booking', {
           destination: searchQuery,
-          coordinates: region
-            ? { lat: region.latitude, lng: region.longitude }
-            : undefined,
+          coordinates
         });
       }
     },

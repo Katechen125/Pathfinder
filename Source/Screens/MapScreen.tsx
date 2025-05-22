@@ -28,7 +28,7 @@ const MapScreen: React.FC<MapScreenProps> = ({ route }) => {
               latitude: place.location.lat,
               longitude: place.location.lng,
             }}
-            pinColor="#2196F3"
+            pinColor="#4CAF50" // green for places
           >
             <Callout tooltip={true}>
               <View style={styles.calloutContainer}>

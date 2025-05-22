@@ -45,23 +45,6 @@ const WelcomeScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => hasPastSearches ? (
-        <TouchableOpacity
-          style={{ marginRight: 15 }}
-          onPress={() => navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-          })}
-        >
-          <Text style={{ color: '#2196F3', fontWeight: '600' }}>Skip</Text>
-        </TouchableOpacity>
-      ) : null,
-      headerLeft: () => null,
-    });
-  }, [hasPastSearches, navigation]);
-
-  useEffect(() => {
     let isActive = true;
 
     if (isSuggestionSelected) {
@@ -289,9 +272,14 @@ const styles = StyleSheet.create({
   clearIcon: {
     position: 'absolute',
     right: 44,
+    top: '50%',
+    transform: [{ translateY: -12 }], 
     padding: 8,
     zIndex: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+  
 });
 
 export default WelcomeScreen;
