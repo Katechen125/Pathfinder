@@ -1,49 +1,56 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ImageBackground, ActivityIndicator, FlatList } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../Services/types';
 import { searchLocations } from '../Services/API';
 import { getPastSearches, addPastSearch } from '../Services/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Welcome'>;
+type WelcomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Welcome'>;
 
-const BAD_WORDS = [
-  'damn', 'hell', 'shit', 'fuck', 'bitch', 'asshole', 'dick', 'piss', 'crap'
-];
+const BAD_WORDS = ['damn', 'hell', 'shit', 'fuck', 'bitch', 'asshole', 'dick', 'piss', 'crap'];
 
-const containsBadWords = (text: string) => {
-  const lower = text.toLowerCase();
-  return BAD_WORDS.some(word => lower.includes(word));
-};
+const containsBadWords = (text: string) =>
+  BAD_WORDS.some(word => text.toLowerCase().includes(word));
 
-type LocationSuggestion = {
-  id: string;
-  name: string;
-};
-
+type LocationSuggestion = { id: string; name: string; };
 
 const WelcomeScreen: React.FC = () => {
-  const navigation = useNavigation<HomeScreenNavigationProp>();
+  // -------------------- Navigation --------------------
+  const navigation = useNavigation<WelcomeScreenNavigationProp>();
+
+  // -------------------- State --------------------
   const [searchTerm, setSearchTerm] = useState('');
-  const [suggestions, setSuggestions] = useState<{ id: string, name: string }[]>([]);
+  const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
+  const [lastSuggestions, setLastSuggestions] = useState<LocationSuggestion[]>([]);
   const [showWarning, setShowWarning] = useState(false);
   const [showNotFound, setShowNotFound] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSuggestionSelected, setIsSuggestionSelected] = useState(false);
-  const [lastSuggestions, setLastSuggestions] = useState<LocationSuggestion[]>([]);
-  const [hasPastSearches, setHasPastSearches] = useState(false);
+  const [showSkip, setShowSkip] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // -------------------- Effects --------------------
+  // Show Skip button only if user has logged in before
   useEffect(() => {
-    const checkPastSearches = async () => {
-      const searches = await getPastSearches();
-      setHasPastSearches(searches.length > 0);
-    };
-
-    checkPastSearches();
+    AsyncStorage.getItem('@has_logged_in').then(val => setShowSkip(val === 'true'));
   }, []);
 
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: showSkip
+        ? () => (
+          <TouchableOpacity style={{ marginRight: 15 }} onPress={handleSkip}>
+            <Text style={{ color: '#2196F3', fontWeight: 'bold' }}>Skip</Text>
+          </TouchableOpacity>
+        )
+        : undefined,
+    });
+  }, [navigation, showSkip]);
+
+  // Fetch suggestions when searchTerm changes
   useEffect(() => {
     let isActive = true;
 
@@ -59,17 +66,13 @@ const WelcomeScreen: React.FC = () => {
       return;
     }
 
-    const exactMatch = suggestions.some(s => s.name === searchTerm);
-
-    if (exactMatch) return;
-
     setIsLoading(true);
     searchLocations(searchTerm)
       .then(res => {
         if (isActive) {
-
-          const uniqueResults = res.filter((item: LocationSuggestion, index: number, self: LocationSuggestion[]) =>
-            self.findIndex((s: LocationSuggestion) => s.id === item.id) === index
+          const uniqueResults = res.filter(
+            (item: LocationSuggestion, idx: number, self: LocationSuggestion[]) =>
+              self.findIndex((s: LocationSuggestion) => s.id === item.id) === idx
           );
           setSuggestions(uniqueResults);
           setLastSuggestions(uniqueResults);
@@ -82,9 +85,11 @@ const WelcomeScreen: React.FC = () => {
       .finally(() => {
         if (isActive) setIsLoading(false);
       });
-    return () => { isActive = false; };
-  }, [searchTerm]);
 
+    return () => { isActive = false; };
+  }, [searchTerm, isSuggestionSelected]);
+
+  // -------------------- Handlers --------------------
   const handleExplore = () => {
     if (containsBadWords(searchTerm)) {
       setShowWarning(true);
@@ -94,12 +99,10 @@ const WelcomeScreen: React.FC = () => {
     setShowWarning(false);
 
     const cleanSearchTerm = searchTerm.trim().toLowerCase();
-
-    const matchFound = lastSuggestions.some(suggestion => {
-      const cleanSuggestion = suggestion.name.toLowerCase();
-      return cleanSearchTerm.includes(cleanSuggestion) ||
-        cleanSuggestion.includes(cleanSearchTerm);
-    });
+    const matchFound = lastSuggestions.some(suggestion =>
+      cleanSearchTerm.includes(suggestion.name.toLowerCase()) ||
+      suggestion.name.toLowerCase().includes(cleanSearchTerm)
+    );
 
     if (!matchFound && cleanSearchTerm !== '') {
       setShowNotFound(true);
@@ -117,8 +120,16 @@ const WelcomeScreen: React.FC = () => {
     setShowWarning(false);
     setShowNotFound(false);
     setIsSuggestionSelected(true);
+    setShowSuggestions(false);
   };
 
+  const handleSkip = async () => {
+    const searches = await getPastSearches();
+    const lastSearch = searches.length > 0 ? searches[searches.length - 1] : '';
+    navigation.navigate('Home', { destination: lastSearch });
+  };
+
+  // -------------------- Render --------------------
   return (
     <ImageBackground
       source={{ uri: 'https://images.unsplash.com/photo-1488085061387-422e29b40080?auto=format&fit=crop&w=800&q=80' }}
@@ -135,6 +146,7 @@ const WelcomeScreen: React.FC = () => {
               setSearchTerm(text);
               setShowWarning(false);
               setShowNotFound(false);
+              setShowSuggestions(true);
             }}
             style={styles.searchInput}
             placeholderTextColor="#555"
@@ -146,13 +158,13 @@ const WelcomeScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.clearIcon}
               onPress={() => setSearchTerm('')}
-              accessibilityLabel="Clear password"
+              accessibilityLabel="Clear search"
             >
               <Icon name="times-circle" size={20} color="#888" />
             </TouchableOpacity>
           )}
         </View>
-        {suggestions.length > 0 && (
+        {showSuggestions && suggestions.length > 0 && (
           <View style={styles.suggestionBox}>
             <FlatList
               keyboardShouldPersistTaps="handled"
@@ -273,13 +285,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 44,
     top: '50%',
-    transform: [{ translateY: -12 }], 
+    transform: [{ translateY: -12 }],
     padding: 8,
     zIndex: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  
+
 });
 
 export default WelcomeScreen;

@@ -18,7 +18,7 @@ const CalendarScreen = () => {
 
   const isFocused = useIsFocused();
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isFocused) {
       loadData();
     }
@@ -31,15 +31,11 @@ const CalendarScreen = () => {
       return;
     }
     setUsername(user);
-    const itinerary = await loadItinerary(user);
     const customEvts = await loadCustomEvents(user);
-    setBookings(itinerary);
     setCustomEvents(customEvts);
+    const itinerary = await loadItinerary(user);
+    setBookings(itinerary);
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const getMarkedDates = () => {
     const marks: any = {};
@@ -77,7 +73,7 @@ const CalendarScreen = () => {
       setEventTitle('');
       setEventDescription('');
       setShowAddEvent(false);
-      loadData();
+      await loadData();
     } catch (error) {
       Alert.alert('Error', 'Failed to add event');
     }
@@ -92,7 +88,7 @@ const CalendarScreen = () => {
       } else {
         await deleteFromItinerary(username, id);
       }
-      loadData();
+      await loadData();
     } catch (error) {
       Alert.alert('Error', 'Failed to delete item');
     }

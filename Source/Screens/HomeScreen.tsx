@@ -1,14 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Pressable } from 'react-native';
-import { fetchPlaces, getPhotoUrl, geocodeLocation, fetchNearbyPlaces, searchActivities,searchHotels } from '../Services/API';
+import { fetchPlaces, getPhotoUrl, geocodeLocation, fetchNearbyPlaces, searchActivities, searchHotels } from '../Services/API';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, Place, MapRegion, Coordinates } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import debounce from 'lodash.debounce';
-import { logoutUser } from '../Services/storage';
-import { getPastSearches, deletePastSearch } from '../Services/storage';
-
+import { logoutUser, getPastSearches, deletePastSearch } from '../Services/storage';
 
 interface Props {
   route: RouteProp<RootStackParamList, 'Home'>;
@@ -21,44 +19,87 @@ const DEFAULT_REGION: MapRegion = {
   longitudeDelta: 0.0421
 };
 
+const DEFAULT_DELTA = 0.0922;
+
 const HomeScreen: React.FC<Props> = ({ route }) => {
-  const initialDestination = route.params?.destination;
-  const [searchQuery, setSearchQuery] = useState(initialDestination);
   const [places, setPlaces] = useState<Place[]>([]);
-  const [savedPlans, setSavedPlans] = useState<Place[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [region, setRegion] = useState<MapRegion>();
-  const [menuVisible, setMenuVisible] = useState(false);
   const [hotels, setHotels] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const [loading, setLoading] = useState(false);
+  const [region, setRegion] = useState<MapRegion>();
+  const [coordinates, setCoordinates] = useState<Coordinates | undefined>();
+  const [warning, setWarning] = useState('');
+  const [menuVisible, setMenuVisible] = useState(false);
   const [pastSearches, setPastSearches] = useState<string[]>([]);
   const [loadingSearches, setLoadingSearches] = useState(true);
   const [showPastSearches, setShowPastSearches] = useState(false);
-  const [coordinates, setCoordinates] = useState<Coordinates | undefined>();
-  const [warning, setWarning] = useState('');
-  const DEFAULT_DELTA = 0.0922;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [savedPlans, setSavedPlans] = useState<Place[]>([]);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const initialDestination = route.params?.destination || '';
 
+  // -------------------- Effects --------------------
+  // 1. Set initial search if coming from WelcomeScreen
   useEffect(() => {
-    const fetchPastSearches = async () => {
+    if (initialDestination && !searchQuery) {
+      setSearchQuery(initialDestination);
+    }
+  }, [initialDestination]);
+
+  // 2. Fetch past searches on mount
+  useEffect(() => {
+    const fetchPast = async () => {
       setLoadingSearches(true);
       const searches = await getPastSearches();
       setPastSearches(searches.reverse());
       setLoadingSearches(false);
     };
-    fetchPastSearches();
+    fetchPast();
   }, []);
 
-  const handleDeleteSearch = async (term: string) => {
-    await deletePastSearch(term);
-    setPastSearches(prev => prev.filter(s => s !== term.toLowerCase()));
-  };
+  // 3. Fetch hotels and activities when region changes
+  useEffect(() => {
+    if (region) {
+      searchHotels(region.latitude, region.longitude).then(setHotels);
+      searchActivities(region.latitude, region.longitude).then(setActivities);
+    }
+  }, [region]);
 
+  // 4. Debounced search for places
+  const debouncedSearch = useCallback(
+    debounce((query: string) => {
+      if (query) {
+        loadData(query);
+      }
+    }, 500),
+    []
+  );
 
+  useEffect(() => {
+    if (searchQuery) {
+      debouncedSearch(searchQuery);
+    }
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [searchQuery, debouncedSearch]);
+
+  // 5. Set menu icon in header
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ marginRight: 15 }}>
+          <Icon name="bars" size={26} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
+  // -------------------- Handlers --------------------
   const loadData = async (query: string) => {
     try {
-      setWarning('');
       setLoading(true);
+      setWarning('');
       const coords = await geocodeLocation(query);
 
       if (!coords) {
@@ -66,6 +107,7 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         setRegion(undefined);
         setCoordinates(undefined);
         setPlaces([]);
+        setLoading(false);
         return;
       }
 
@@ -76,7 +118,6 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         latitudeDelta: DEFAULT_DELTA,
         longitudeDelta: DEFAULT_DELTA,
       });
-
 
       const [textPlaces, nearbyPlaces] = await Promise.all([
         fetchPlaces(query),
@@ -100,42 +141,12 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
     }
   };
 
-  useEffect(() => {
-    if (region) {
-      searchHotels(region.latitude, region.longitude).then(setHotels);
-      searchActivities(region.latitude, region.longitude).then(setActivities);
-    }
+  const handleDeleteSearch = async (term: string) => {
+    await deletePastSearch(term);
+    setPastSearches(prev => prev.filter(s => s !== term.toLowerCase()));
+  };
 
-  }, [region]);
-  const debouncedSearch = useCallback(
-    debounce((query: string) => {
-      loadData(query);
-    }, 500),
-    []
-  );
-
-  useEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ marginRight: 15 }}>
-          <Icon name="bars" size={26} color="#333" />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
-
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      debouncedSearch(searchQuery);
-    }
-  }, [searchQuery, debouncedSearch]);
-
-  useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
+  // -------------------- Menu Options --------------------
   const menuOptions = [
     {
       label: 'Map',
@@ -213,82 +224,79 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
       }
     }
   ];
-  return (
-    <View style={styles.container}>
-      <View style={styles.pastSearchesHeader}>
-        <TouchableOpacity
-          style={styles.pastSearchesToggle}
-          onPress={() => setShowPastSearches(v => !v)}
-        >
-          <Text style={styles.pastSearchesTitle}>Past Searches</Text>
-          <Icon
-            name={showPastSearches ? 'chevron-up' : 'chevron-down'}
-            size={18}
-            color="#2196F3"
-            style={{ marginLeft: 8 }}
-          />
-        </TouchableOpacity>
-        {showPastSearches && (
-          loadingSearches ? (
-            <ActivityIndicator size="small" color="#2196F3" />
-          ) : pastSearches.length === 0 ? (
-            <Text style={{ color: '#888', marginTop: 8 }}>No past searches</Text>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
-              {pastSearches.map((term, idx) => (
-                <View key={term} style={styles.searchCard}>
-                  <Text style={{ fontSize: 16 }}>{term}</Text>
-                  <TouchableOpacity onPress={() => handleDeleteSearch(term)}>
-                    <Icon name="trash" size={18} color="#d32f2f" style={{ marginLeft: 8 }} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
-          )
-        )}
-      </View>
-      <Modal
-        visible={menuVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setMenuVisible(false)}
+
+  // -------------------- Render Functions --------------------
+  const renderPastSearches = () => (
+    <View style={styles.pastSearchesHeader}>
+      <TouchableOpacity
+        style={styles.pastSearchesToggle}
+        onPress={() => setShowPastSearches(v => !v)}
       >
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
-          <View style={styles.menuContainer}>
-            {menuOptions.map((opt) => (
-              <TouchableOpacity
-                key={opt.label}
-                style={styles.menuItem}
-                onPress={opt.onPress}
-              >
-                <Icon name={opt.icon} size={22} color="#2196F3" style={{ marginRight: 15 }} />
-                <Text style={styles.menuText}>{opt.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
-
-      <View style={styles.searchHeader}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search destinations..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          autoCapitalize="words"
+        <Text style={styles.pastSearchesTitle}>Past Searches</Text>
+        <Icon
+          name={showPastSearches ? 'chevron-up' : 'chevron-down'}
+          size={18}
+          color="#2196F3"
+          style={{ marginLeft: 8 }}
         />
-      </View>
-
-      {warning !== '' && (
-        <Text style={styles.warningText}>{warning}</Text>
+      </TouchableOpacity>
+      {showPastSearches && (
+        loadingSearches ? (
+          <ActivityIndicator size="small" color="#2196F3" />
+        ) : pastSearches.length === 0 ? (
+          <Text style={{ color: '#888', marginTop: 8 }}>No past searches</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
+            {pastSearches.map((term) => (
+              <View key={term} style={styles.searchCard}>
+                <Text style={{ fontSize: 16 }}>{term}</Text>
+                <TouchableOpacity onPress={() => handleDeleteSearch(term)}>
+                  <Icon name="trash" size={18} color="#d32f2f" style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )
       )}
+    </View>
+  );
 
-      {loading ? (
+  const renderMenuModal = () => (
+    <Modal
+      visible={menuVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setMenuVisible(false)}
+    >
+      <Pressable style={styles.menuOverlay} onPress={() => setMenuVisible(false)}>
+        <View style={styles.menuContainer}>
+          {menuOptions.map((opt) => (
+            <TouchableOpacity
+              key={opt.label}
+              style={styles.menuItem}
+              onPress={opt.onPress}
+            >
+              <Icon name={opt.icon} size={22} color="#2196F3" style={{ marginRight: 15 }} />
+              <Text style={styles.menuText}>{opt.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </Pressable>
+    </Modal>
+  );
+
+  const renderPlaces = () => {
+    if (loading) {
+      return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#0000ff" />
           <Text style={styles.loadingText}>Searching for places...</Text>
         </View>
-      ) : places.length > 0 ? (
+      );
+    }
+
+    if (places.length > 0) {
+      return (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {places.map((place) => (
             <View key={place.id} style={styles.placeContainer}>
@@ -312,12 +320,43 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
             </View>
           ))}
         </ScrollView>
-      ) : (
+      );
+    }
+
+    if (!loading && searchQuery) {
+      return (
         <View style={styles.emptyState}>
           <Icon name="map" size={50} color="#ccc" />
           <Text style={styles.emptyText}>No places found for "{searchQuery}"</Text>
         </View>
+      );
+    }
+
+    return null;
+  };
+
+
+  // -------------------- Render --------------------
+  return (
+    <View style={styles.container}>
+      {renderPastSearches()}
+      {renderMenuModal()}
+
+      <View style={styles.searchHeader}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder={initialDestination || "Search destinations..."}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="words"
+        />
+      </View>
+
+      {warning !== '' && (
+        <Text style={styles.warningText}>{warning}</Text>
       )}
+
+      {renderPlaces()}
     </View>
   );
 };

@@ -4,6 +4,7 @@ import { registerUser, loginUser, setCurrentUser } from '../Services/storage';
 import { RootStackParamList } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type LoginScreenProps = {
     navigation: StackNavigationProp<RootStackParamList, 'Login'>;
@@ -48,6 +49,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 const success = await loginUser(username, password);
                 if (success) {
                     await setCurrentUser(username);
+                    await AsyncStorage.setItem('@has_logged_in', 'true');
                     navigation.reset({
                         index: 0,
                         routes: [{ name: 'Welcome' }],
