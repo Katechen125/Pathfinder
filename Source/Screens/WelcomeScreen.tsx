@@ -237,6 +237,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: 'white',
     fontSize: 18,
+    position: 'relative',
   },
   loadingIcon: {
     position: 'absolute',
@@ -284,12 +285,8 @@ const styles = StyleSheet.create({
   clearIcon: {
     position: 'absolute',
     right: 44,
-    top: '50%',
-    transform: [{ translateY: -12 }],
     padding: 8,
     zIndex: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 
 });
