@@ -97,8 +97,8 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
 
   // -------------------- Handlers --------------------
   const loadData = async (query: string) => {
+    setLoading(true);
     try {
-      setLoading(true);
       setWarning('');
       const coords = await geocodeLocation(query);
 
@@ -320,15 +320,6 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
             </View>
           ))}
         </ScrollView>
-      );
-    }
-
-    if (!loading && searchQuery) {
-      return (
-        <View style={styles.emptyState}>
-          <Icon name="map" size={50} color="#ccc" />
-          <Text style={styles.emptyText}>No places found for "{searchQuery}"</Text>
-        </View>
       );
     }
 
