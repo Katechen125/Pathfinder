@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ScrollView, TouchableOpacity, Animated, Keyboard } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { getCurrentUser, saveExpenses, loadExpenses } from '../Services/storage';
@@ -30,7 +30,7 @@ const ExpenseScreen = () => {
     const loadData = async () => {
       const username = await getCurrentUser();
       if (!username) return;
-      
+
       const data = await loadExpenses(username);
       setExpenses(data.expenses);
       setLimit(data.limit);
@@ -42,7 +42,7 @@ const ExpenseScreen = () => {
     const saveData = async () => {
       const username = await getCurrentUser();
       if (!username) return;
-      
+
       await saveExpenses(username, { expenses, limit });
     };
     saveData();
@@ -118,7 +118,9 @@ const ExpenseScreen = () => {
   }, [expenses, limit]);
 
   return (
-    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView style={styles.container} keyboardShouldPersistTaps="handled"
+      onScrollBeginDrag={Keyboard.dismiss}
+    >
       <Text style={styles.title}>
         <Icon name="money" size={24} color="#4CAF50" /> Travel Budget Tracker
       </Text>

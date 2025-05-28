@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, StyleSheet, Image, ActivityIndicator, Text } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Image, Text, Animated, TouchableOpacity } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { RouteProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList, Place } from '../Services/types';
@@ -13,9 +13,39 @@ interface MapScreenProps {
 const MapScreen: React.FC<MapScreenProps> = ({ route }) => {
   const navigation = useNavigation();
   const { places = [], hotels = [], activities = [], region } = route.params;
+  const [legendVisible, setLegendVisible] = useState(true);
 
   return (
     <View style={styles.container}>
+
+      <View style={styles.legendContainer}>
+        <TouchableOpacity
+          style={styles.legendToggle}
+          onPress={() => setLegendVisible(!legendVisible)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.legendToggleText}>
+            {legendVisible ? 'Hide Legend ▲' : 'Show Legend ▼'}
+          </Text>
+        </TouchableOpacity>
+        {legendVisible && (
+          <View style={styles.legendBox}>
+            <View style={styles.legendRow}>
+              <View style={[styles.legendColor, { backgroundColor: '#4CAF50' }]} />
+              <Text style={styles.legendLabel}>Suggestions</Text>
+            </View>
+            <View style={styles.legendRow}>
+              <View style={[styles.legendColor, { backgroundColor: '#FF9800' }]} />
+              <Text style={styles.legendLabel}>Activities</Text>
+            </View>
+            <View style={styles.legendRow}>
+              <View style={[styles.legendColor, { backgroundColor: '#0984e3' }]} />
+              <Text style={styles.legendLabel}>Hotels</Text>
+            </View>
+          </View>
+        )}
+      </View>
+
       <MapView
         style={styles.map}
         region={region}
@@ -128,6 +158,57 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#444',
     marginTop: 2,
+  },
+  legendContainer: {
+    position: 'absolute',
+    top: 24,
+    left: 16,
+    zIndex: 10,
+    alignItems: 'flex-start',
+  },
+  legendToggle: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginBottom: 4,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  legendToggleText: {
+    fontWeight: '600',
+    fontSize: 13,
+    color: '#333',
+  },
+  legendBox: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: 8,
+    padding: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  legendColor: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  legendLabel: {
+    fontSize: 14,
+    color: '#333',
   },
 });
 
