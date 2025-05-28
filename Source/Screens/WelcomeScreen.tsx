@@ -285,7 +285,8 @@ const styles = StyleSheet.create({
   clearIcon: {
     position: 'absolute',
     right: 44,
-    padding: 8,
+    top: '50%',
+    transform: [{ translateY: -12 }], 
     zIndex: 2,
   },
 
