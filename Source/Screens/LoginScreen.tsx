@@ -35,7 +35,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             hasUpper: /[A-Z]/.test(input),
             hasNumber: /\d/.test(input),
             hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(input),
-            noSequences: !/(abc|123|qwerty|password|admin|4444|000)/.test(input.toLowerCase()),
+            noSequences: input.length > 0
+                ? !/(abc|123|qwerty|password|admin|4444|000)/.test(input.toLowerCase())
+                : false,
         });
     };
 
@@ -53,8 +55,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                     navigation.reset({
                         index: 0,
                         routes: [{ name: 'Welcome' }],
-                      });
-                      
+                    });
+
                 } else {
                     Alert.alert('Error', 'Invalid credentials');
                 }
@@ -72,8 +74,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
                 navigation.reset({
                     index: 0,
                     routes: [{ name: 'Welcome' }],
-                  });
-                  
+                });
+
             }
         } catch (error) {
             const err = error as Error;
@@ -258,10 +260,10 @@ const styles = StyleSheet.create({
     },
     clearIcon: {
         position: 'absolute',
-        right: 44, 
+        right: 44,
         padding: 8,
         zIndex: 2,
-      },
+    },
 });
 
 export default LoginScreen;

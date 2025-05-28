@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { loadItinerary, deleteFromItinerary, getCurrentUser } from '../Services/storage';
+import { View, Text, SectionList, Image, TouchableOpacity, StyleSheet, Alert, } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { SavedItem } from '../Services/types';
+import { loadItinerary, deleteFromItinerary, getCurrentUser, } from '../Services/storage';
+import { SavedItem, Flight, Hotel, Activity, Place } from '../Services/types';
 
 const ItineraryScreen = () => {
-  const [plans, setPlans] = useState<SavedItem[]>([]);
+  const [sections, setSections] = useState<{ title: string; data: SavedItem[] }[]>([]);
 
   const loadData = async () => {
     const username = await getCurrentUser();
@@ -14,7 +14,16 @@ const ItineraryScreen = () => {
       return;
     }
     const items = await loadItinerary(username);
-    setPlans(items);
+    setSections([
+      {
+        title: 'Favorites',
+        data: items.filter(i => i.type === 'place'),
+      },
+      {
+        title: 'My Bookings',
+        data: items.filter(i => i.type !== 'place'),
+      },
+    ]);
   };
 
   const handleDelete = async (id: string) => {
@@ -39,44 +48,55 @@ const ItineraryScreen = () => {
         <Icon name="bookmark" size={24} color="#2196F3" /> My Itinerary
       </Text>
 
-      <FlatList
-        data={plans}
+      <SectionList
+        sections={sections}
         keyExtractor={item => item.id}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No bookings yet. Start planning!</Text>
-        }
-        renderItem={({ item }) => {
-          const isFlight = item.type === 'flight';
-          const isPlace = item.type === 'place';
-          const isHotel = item.type === 'hotel';
-          const isActivity = item.type === 'activity';
-
-          return (
-            <View style={styles.card}>
-              {item.data.image && (
-                <Image source={{ uri: item.data.image }} style={styles.image} />
+        stickySectionHeadersEnabled={true}
+        renderSectionHeader={({ section: { title } }) => (
+          <View style={styles.sectionHeaderContainer}>
+            <Text style={styles.sectionHeader}>{title}</Text>
+          </View>
+        )}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.title}>
+              {item.type === 'flight'
+                ? (item.data as Flight).airline
+                : (item.data as Place | Hotel | Activity).name}
+            </Text>
+            <Text style={styles.subtitle}>
+              {item.type.toUpperCase()} • {item.date && new Date(item.date).toLocaleDateString()}
+            </Text>
+            <View style={styles.actionRow}>
+              {item.type === 'place' ? (
+                <TouchableOpacity
+                  onPress={() => handleDelete(item.id)}
+                  style={styles.heartContainer}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    name="heart"
+                    size={28}
+                    color="#FFA500"
+                  />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => handleDelete(item.id)}
+                  style={styles.trashButton}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="trash" size={24} color="#f44336" />
+                </TouchableOpacity>
               )}
-              <Text style={styles.title}>
-                {isFlight
-                  ? (item.data as any).airline
-                  : (item.data as any).name}
-              </Text>
-
-              <Text style={styles.subtitle}>
-                {item.type.toUpperCase()} •{' '}
-                {item.date && new Date(item.date).toLocaleDateString()}
-              </Text>
-
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDelete(item.id)}
-              >
-                <Icon name="trash" size={16} color="white" />
-                <Text style={styles.buttonText}>Remove</Text>
-              </TouchableOpacity>
             </View>
-          );
-        }}
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            No favorites or bookings yet. Start planning your trip!
+          </Text>
+        }
       />
     </View>
   );
@@ -93,19 +113,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2196F3',
     padding: 16,
-    margin: 16,
+    marginBottom: 8,
     textAlign: 'center',
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 15,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   image: {
     width: '100%',
@@ -113,37 +122,81 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+  heartRow: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  sectionHeaderContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    borderBottomLeftRadius: 12,   
+    borderBottomRightRadius: 12, 
+    marginTop: 16,
+    marginBottom: 4,
+    alignItems: 'center',
+    elevation: 1,
+  },
+  sectionHeader: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFA500',
+    textAlign: 'center',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 18,
+    marginBottom: 15,
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
   title: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
     marginBottom: 5,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 14,
     color: '#666',
-    marginBottom: 8,
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  deleteButton: {
-    backgroundColor: '#f44336',
-    padding: 8,
-    borderRadius: 5,
+  actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
-    alignSelf: 'flex-end',
-    width: 100
+    marginTop: 8,
   },
-  buttonText: {
-    color: 'white',
-    marginLeft: 5
+  trashButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    marginLeft: 10,
   },
   emptyText: {
     textAlign: 'center',
     color: '#888',
     marginTop: 40,
+    fontSize: 16,
   },
+  heartContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#fff',
+    marginLeft: 10,
+  },
+
 });
 
 export default ItineraryScreen;

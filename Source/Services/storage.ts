@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface SavedItem {
   id: string;
-  type: 'flight' | 'hotel' | 'activity';
+  type: 'flight' | 'hotel' | 'activity' | 'place';
   data: any;
   date: string;
 }
@@ -66,6 +66,22 @@ export const addToItinerary = async (item: SavedItem) => {
   const current = await loadItinerary(username);
   if (!current.some(i => i.id === item.id && i.type === item.type)) {
     await saveItinerary(username, [...current, item]);
+   
+    if (item.type !== 'place') {
+
+      const events = await loadCustomEvents(username);
+      if (!events.some(ev => ev.id === item.id)) {
+        await addCustomEvent({
+          id: item.id,
+          title:
+            item.type === 'flight'
+              ? (item.data as any).airline
+              : (item.data as any).name,
+          description: item.data.description || '',
+          date: item.date,
+        });
+      }
+    }
   }
 };
 
@@ -75,6 +91,9 @@ export const deleteFromItinerary = async (username: string, id: string) => {
   const currentItems = await loadItinerary(username);
   const updatedItems = currentItems.filter(item => item.id !== id);
   await saveItinerary(username, updatedItems);
+
+  await deleteCustomEvent(username, id);
+
   return updatedItems;
 };
 
@@ -122,6 +141,10 @@ export const deleteCustomEvent = async (username: string, id: string) => {
   const current = await loadCustomEvents(username);
   const updated = current.filter(event => event.id !== id);
   await saveCustomEvents(username, updated);
+
+  const currentItinerary = await loadItinerary(username);
+  const updatedItinerary = currentItinerary.filter(item => item.id !== id);
+  await saveItinerary(username, updatedItinerary);
 };
 
 //search history

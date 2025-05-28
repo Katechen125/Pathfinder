@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, ScrollView, TouchableOpacity, Alert, TextInput, Modal, Pressable } from 'react-native';
 import { fetchPlaces, getPhotoUrl, geocodeLocation, fetchNearbyPlaces, searchActivities, searchHotels } from '../Services/API';
-import { RouteProp, useNavigation } from '@react-navigation/native';
-import { RootStackParamList, Place, MapRegion, Coordinates } from '../Services/types';
+import { RouteProp, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { RootStackParamList, Place, MapRegion, Coordinates, SavedItem } from '../Services/types';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import debounce from 'lodash.debounce';
-import { logoutUser, getPastSearches, deletePastSearch } from '../Services/storage';
+import { logoutUser, getPastSearches, deletePastSearch, addToItinerary, deleteFromItinerary, loadItinerary, getCurrentUser, } from '../Services/storage';
 
 interface Props {
   route: RouteProp<RootStackParamList, 'Home'>;
@@ -37,6 +37,7 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
   const [savedPlans, setSavedPlans] = useState<Place[]>([]);
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const initialDestination = route.params?.destination || '';
+  const [savedPlaceIds, setSavedPlaceIds] = useState<string[]>([]);
 
   // -------------------- Effects --------------------
   // 1. Set initial search if coming from WelcomeScreen
@@ -94,6 +95,47 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
       ),
     });
   }, [navigation]);
+
+
+  // 6.Like Places
+
+  const fetchSavedPlaces = async () => {
+    const username = await getCurrentUser();
+    if (!username) return;
+    const items = await loadItinerary(username);
+    setSavedPlaceIds(items.filter(i => i.type === 'place').map(i => i.id));
+  };
+  fetchSavedPlaces();
+
+
+  const toggleFavorite = async (place: Place) => {
+    const username = await getCurrentUser();
+    if (!username) {
+      Alert.alert('Login required', 'Please log in to save favorites');
+      return;
+    }
+    const isSaved = savedPlaceIds.includes(place.id);
+
+    if (isSaved) {
+      await deleteFromItinerary(username, place.id);
+    } else {
+      await addToItinerary({
+        id: place.id,
+        type: 'place',
+        data: place,
+        date: new Date().toISOString(),
+      });
+    }
+    const items = await loadItinerary(username);
+    setSavedPlaceIds(items.filter(i => i.type === 'place').map(i => i.id));
+  };
+
+  //Sync with itinerary
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchSavedPlaces();
+    }, [places])
+  );
 
   // -------------------- Handlers --------------------
   const loadData = async (query: string) => {
@@ -297,31 +339,43 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
 
     if (places.length > 0) {
       return (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {places.map((place) => (
-            <View key={place.id} style={styles.placeContainer}>
-              {place.photoReference ? (
+        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+          {places.map(place => (
+            <View style={{ alignItems: 'center', width: '100%' }} key={place.id}>
+              <View style={styles.card}>
                 <Image
-                  source={{ uri: getPhotoUrl(place.photoReference) }}
-                  style={styles.placeImage}
-                  resizeMode="cover"
+                  source={{
+                    uri: place.photoReference
+                      ? getPhotoUrl(place.photoReference)
+                      : place.image
+                        ? place.image
+                        : 'https://via.placeholder.com/400x300?text=No+Image'
+                  }}
+                  style={styles.image}
                 />
-              ) : (
-                <View style={styles.imageFallback}>
-                  <Icon name="image" size={50} color="#ccc" />
+                <View style={styles.addressHeartRow}>
+                  <Text style={styles.placeName} numberOfLines={1} ellipsizeMode="tail">
+                    {place.name || 'No name'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => toggleFavorite(place)}
+                    style={styles.heartContainer}
+                    activeOpacity={0.7}
+                  >
+                    <Icon
+                      name={savedPlaceIds.includes(place.id) ? 'heart' : 'heart-o'}
+                      size={32}
+                      color={savedPlaceIds.includes(place.id) ? '#FFA500' : '#ccc'}
+                    />
+                  </TouchableOpacity>
                 </View>
-              )}
-              <Text style={styles.placeName}>{place.name}</Text>
-              <View style={styles.addressRow}>
-                <Text style={styles.placeAddress} numberOfLines={1} ellipsizeMode="tail">
-                  {place.address}
-                </Text>
               </View>
             </View>
           ))}
         </ScrollView>
       );
-    }
+    };
+
 
     return null;
   };
@@ -391,17 +445,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
   },
-  placeName: {
-    fontSize: 18,
-    fontWeight: '600',
-    padding: 15,
-    paddingBottom: 5,
-    color: '#333',
-  },
-  placeAddress: {
-    fontSize: 14,
-    color: '#666',
-  },
   imageFallback: {
     width: '100%',
     height: 200,
@@ -423,12 +466,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginTop: 10,
-    textAlign: 'center',
   },
   menuOverlay: {
     flex: 1,
@@ -458,13 +495,6 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 16,
     color: '#333',
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    paddingBottom: 15,
   },
   searchCard: {
     flexDirection: 'row',
@@ -501,7 +531,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginVertical: 8,
-  }
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#888',
+    marginTop: 40,
+    fontSize: 16,
+  },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
+    marginBottom: 18,
+    width: '92%',
+    overflow: 'hidden',
+    elevation: 2,
+  },
+  image: {
+    width: '100%',
+    height: 180,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    backgroundColor: '#eee',
+  },
+  addressHeartRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    width: '100%',
+    backgroundColor: '#fff',
+  },
+  placeName: {
+    flex: 1,
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  heartContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingLeft: 12,
+    paddingRight: 4,
+  },
+
 
 });
 
