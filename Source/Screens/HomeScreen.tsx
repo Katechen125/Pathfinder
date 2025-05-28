@@ -40,6 +40,20 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
   const [savedPlaceIds, setSavedPlaceIds] = useState<string[]>([]);
 
   // -------------------- Effects --------------------
+  //0. Function to sync itinerary favourites with homescreen
+  const fetchSavedPlaces = async () => {
+    const username = await getCurrentUser();
+    if (!username) return;
+    const items = await loadItinerary(username);
+    setSavedPlaceIds(items.filter(i => i.type === 'place').map(i => i.id));
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchSavedPlaces();
+    }, [places])
+  );
+
   // 1. Set initial search if coming from WelcomeScreen
   useEffect(() => {
     if (initialDestination && !searchQuery) {
@@ -97,16 +111,6 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
   }, [navigation]);
 
 
-  // 6.Like Places
-
-  const fetchSavedPlaces = async () => {
-    const username = await getCurrentUser();
-    if (!username) return;
-    const items = await loadItinerary(username);
-    setSavedPlaceIds(items.filter(i => i.type === 'place').map(i => i.id));
-  };
-  fetchSavedPlaces();
-
 
   const toggleFavorite = async (place: Place) => {
     const username = await getCurrentUser();
@@ -126,16 +130,9 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         date: new Date().toISOString(),
       });
     }
-    const items = await loadItinerary(username);
-    setSavedPlaceIds(items.filter(i => i.type === 'place').map(i => i.id));
+    
+    fetchSavedPlaces();
   };
-
-  //Sync with itinerary
-  useFocusEffect(
-    React.useCallback(() => {
-      fetchSavedPlaces();
-    }, [places])
-  );
 
   // -------------------- Handlers --------------------
   const loadData = async (query: string) => {
