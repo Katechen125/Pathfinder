@@ -54,8 +54,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     paddingHorizontal: 0,
-    paddingTop: 16, // Small space from top
-    // No justifyContent
+    paddingTop: 16, 
   },
   card: {
     width: '92%',
