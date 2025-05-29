@@ -92,11 +92,6 @@ const ItineraryScreen = () => {
             </View>
           </View>
         )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            No favorites or bookings yet. Start planning your trip!
-          </Text>
-        }
       />
     </View>
   );
