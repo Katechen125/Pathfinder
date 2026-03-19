@@ -1,7 +1,13 @@
-// Import Axios for making HTTP requests
+/**
+ * Pathfinder — API Service
+ * © 2024 Katechen125. All rights reserved.
+ */
 import axios from 'axios';
+import AppConfig from './config';
 
-const GOOGLE_API_KEY = 'AIzaSyBnYEWI8a36nAJDsONKSt9UeMseVvqAlYI';
+const GOOGLE_API_KEY = AppConfig.GOOGLE_MAPS_API_KEY;
+const GEOAPIFY_KEY   = AppConfig.GEOAPIFY_KEY;
+
 const USE_MOCK_DATA = false; // Set to false when API is working correctly
 
 // Mock data for development when APIs fail
@@ -275,7 +281,6 @@ export const searchHotels = async (lat: number, lng: number) => {
         categories: 'accommodation',
         filter: `circle:${lng},${lat},5000`,
         limit: 20,
-        apiKey: '5b0ee5455a234d0da7bd056f40cd7d63'
       }
     }
     );
@@ -297,7 +302,6 @@ export const searchActivities = async (lat: number, lng: number) => {
         categories: 'entertainment,tourism',
         filter: `circle:${lng},${lat},5000`,
         limit: 20,
-        apiKey: '5b0ee5455a234d0da7bd056f40cd7d63'
       }
     }
     );
