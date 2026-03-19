@@ -1,8 +1,8 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { RootStackParamList } from './Source/Services/types';
+import { logWatermark } from './Source/Services/watermark';
 
 // Import screens for the app 
 import WelcomeScreen from './Source/Screens/WelcomeScreen';
@@ -26,6 +26,9 @@ import FeedbackScreen from './Source/Screens/FeedbackScreen';
 const Stack = createStackNavigator<RootStackParamList>();
 
 const App = () => {
+  useEffect(() => {
+    logWatermark();
+  }, []);
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Login">
