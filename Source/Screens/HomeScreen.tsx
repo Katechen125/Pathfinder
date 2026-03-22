@@ -130,7 +130,7 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         date: new Date().toISOString(),
       });
     }
-    
+
     fetchSavedPlaces();
   };
 
@@ -287,12 +287,22 @@ const HomeScreen: React.FC<Props> = ({ route }) => {
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 10 }}>
             {pastSearches.map((term) => (
-              <View key={term} style={styles.searchCard}>
+              <TouchableOpacity
+                key={term}
+                style={styles.searchCard}
+                onPress={() => {
+                  setSearchQuery(term);
+                  setShowPastSearches(false);
+                }}
+              >
                 <Text style={{ fontSize: 16 }}>{term}</Text>
-                <TouchableOpacity onPress={() => handleDeleteSearch(term)}>
+                <TouchableOpacity onPress={(e) => {
+                  e.stopPropagation();
+                  handleDeleteSearch(term);
+                }}>
                   <Icon name="trash" size={18} color="#d32f2f" style={{ marginLeft: 8 }} />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         )

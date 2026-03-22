@@ -6,7 +6,7 @@ import axios from 'axios';
 import AppConfig from './config';
 
 const GOOGLE_API_KEY = AppConfig.GOOGLE_MAPS_API_KEY;
-const GEOAPIFY_KEY   = AppConfig.GEOAPIFY_KEY;
+const GEOAPIFY_KEY = AppConfig.GEOAPIFY_KEY;
 
 const USE_MOCK_DATA = false; // Set to false when API is working correctly
 
@@ -281,6 +281,7 @@ export const searchHotels = async (lat: number, lng: number) => {
         categories: 'accommodation',
         filter: `circle:${lng},${lat},5000`,
         limit: 20,
+        apiKey: GEOAPIFY_KEY,
       }
     }
     );
@@ -302,6 +303,7 @@ export const searchActivities = async (lat: number, lng: number) => {
         categories: 'entertainment,tourism',
         filter: `circle:${lng},${lat},5000`,
         limit: 20,
+        apiKey: GEOAPIFY_KEY,
       }
     }
     );
