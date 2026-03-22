@@ -1,11 +1,11 @@
-Pathfinder
+**Pathfinder**
 A mobile travel companion app built with React Native and Expo. Plan trips end-to-end — search flights and hotels, track expenses, convert currencies, manage itineraries, and navigate with Google Maps.
 
 © 2024 Katechen125. All rights reserved.
 Unauthorised use, reproduction, or redistribution is prohibited.
 
 
-Features
+**Features**
 
 Interactive Map — Google Maps with place search via Google Places Autocomplete
 Flight Search — Browse and filter flights by route and date
@@ -21,7 +21,7 @@ Past Searches — Quickly re-search recent destinations
 Login & Feedback — Personalized session with in-app feedback
 
 
-⚠️ Dummy Data Notice
+**⚠️ Dummy Data Notice**
 Several screens use placeholder data for development and demonstration purposes. These are marked with // [DUMMY DATA] comments in the source code.
 ScreenWhat is mockedFlightScreen.tsxHardcoded sample flight resultsCurrencyConverterScreen.tsxHardcoded exchange ratesVisaScreen.tsxStatic visa requirements mapLoginScreen.tsxNo real authentication — accepts any non-empty inputBookingScreen.tsxPlaceholder booking URLs
 
@@ -29,8 +29,8 @@ HotelsScreen and ActivitiesScreen use real Geoapify API data. They fall back to 
 
 See DOCUMENTATION.md for instructions on replacing each with live API calls.
 
-Quick Start
-Prerequisites
+**Quick Start**
+*Prerequisites*
 
 Node.js 18+
 ngrok for device testing: npm install -g @expo/ngrok@^4.0.0
@@ -55,7 +55,7 @@ Scan the QR code with Expo Go on your phone.
 Windows users: Always use --tunnel — it routes through Expo's servers instead of local WiFi, bypassing Windows firewall issues.
 
 
-Security
+**Security**
 API keys are stored in app.json under the extra field and read at runtime via expo-constants. Keep real keys out of version control — use placeholder values in the committed app.json.
 For production builds, use EAS Secrets to inject keys at build time.
 
@@ -96,10 +96,10 @@ Pathfinder/
 │       └── storage.ts             # AsyncStorage helpers
 └── android/
 
-Tech Stack
+**Tech Stack**
 LayerTechnologyFrameworkReact Native + Expo SDK 54LanguageTypeScriptNavigationReact Navigation v7 (Stack)Mapsreact-native-maps + Google Maps SDKPlaces/Hotels/ActivitiesGeoapify APIPlace SearchGoogle Places AutocompleteStorageAsyncStorageHTTPAxiosAnimationsreact-native-reanimated v3Secretsexpo-constants + app.json extra
 
-Documentation
+**Documentation**
 FileContentsDOCUMENTATION.mdArchitecture, screen reference, common errors & fixes, running the app, build & deploySECURITY.mdVulnerability remediation log, CocoaPods deprecation notice
 
 License
